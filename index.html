@@ -526,8 +526,20 @@
                             <!-- DL Scanner Container (Hidden by default) -->
                             <div id="dlScannerContainer" class="hidden w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-inner border border-gray-600 mb-4">
                                 <div id="dlBarcodeReader" class="w-full h-full"></div>
-                                <div class="absolute bottom-2 left-0 right-0 flex justify-center z-10">
-                                    <button type="button" onclick="stopDLScanner()" class="bg-gray-800 text-white px-4 py-2 rounded-full shadow-lg hover:bg-red-600 text-sm"><i class="fa-solid fa-times"></i> Cancel Scan</button>
+                                
+                                <!-- NEW: Hidden file input to allow manual photo capture for barcode -->
+                                <input type="file" id="dlFileInput" accept="image/*" capture="environment" class="hidden" onchange="handleDLFileScan(event)">
+                                
+                                <div class="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-10 px-2">
+                                    <button type="button" onclick="stopDLScanner()" class="bg-gray-800 text-white px-4 py-2 rounded-full shadow-lg hover:bg-red-600 text-sm font-medium"><i class="fa-solid fa-times"></i> Cancel Scan</button>
+                                    <!-- NEW: Manual Photo Button -->
+                                    <button type="button" onclick="document.getElementById('dlFileInput').click()" class="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-500 text-sm font-medium"><i class="fa-solid fa-camera"></i> Take Photo Instead</button>
+                                </div>
+
+                                <!-- NEW: Loading Screen while scanning image -->
+                                <div id="dlScannerLoading" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-20">
+                                    <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2 text-blue-400"></i>
+                                    <p class="text-sm font-medium">Scanning Image...</p>
                                 </div>
                             </div>
 
@@ -1326,6 +1338,40 @@
             el('dlScannerContainer').classList.add('hidden');
         };
 
+        // NEW: Function to handle scanning from a manually taken photo
+        window.handleDLFileScan = async (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            
+            el('dlScannerLoading').classList.remove('hidden');
+            
+            if(!html5QrCode_DL) {
+                html5QrCode_DL = new Html5Qrcode("dlBarcodeReader");
+            }
+            
+            try {
+                // Scan the static image file instead of live video
+                const decodedText = await html5QrCode_DL.scanFile(file, true);
+                
+                stopDLScanner();
+                const name = parseAAMVA(decodedText);
+                
+                if(name) {
+                    el('contractorName').value = name;
+                    showToast("ID Scanned! Now take a photo.", "success");
+                    startCamera(null);
+                } else {
+                    showToast("Couldn't read ID format.", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("No barcode found in that image. Please try again.", "error");
+            } finally {
+                el('dlScannerLoading').classList.add('hidden');
+                e.target.value = ''; // Reset input
+            }
+        };
+
         function parseAAMVA(text) {
             const cleanText = text.replace(/\r/g, '\n');
             const lines = cleanText.split('\n');
@@ -1352,7 +1398,8 @@
             el('btnCapture').disabled = false; el('btnCapture').classList.remove('hidden'); el('btnRetake').classList.add('hidden');
             capturedImageBase64 = null;
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); // front facing preferred for portraits
+                // CHANGED: 'user' (front camera) changed to 'environment' (back camera)
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); 
                 el('cameraVideo').srcObject = videoStream;
             } catch (err) {
                 showToast("Camera permissions required.", "error");
