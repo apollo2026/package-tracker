@@ -8,9 +8,10 @@
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- NEW: Enterprise Barcode Scanning Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Custom Styles & Dark Theme -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -48,7 +49,6 @@
         .themed-border { border-color: var(--border-color); }
         .themed-hover:hover { background-color: var(--hover-bg); }
 
-        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -62,10 +62,14 @@
         .toast-enter { transform: translateY(100%); opacity: 0; }
         .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .toast-exit { transform: translateX(100%); opacity: 0; transition: all 0.3s ease-in; }
+        
+        /* Barcode Scanner Overrides */
+        #packageBarcodeReader video, #dlBarcodeReader video { object-fit: cover !important; border-radius: 0.5rem; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
 
+    <!-- Global App Loading Overlay -->
     <div id="globalLoading" class="fixed inset-0 bg-gray-950 z-[200] flex flex-col items-center justify-center">
         <i class="fa-solid fa-cube text-white text-5xl mb-4 animate-bounce"></i>
         <h2 class="text-2xl font-bold text-white tracking-tight">Apollo Security</h2>
@@ -74,6 +78,7 @@
         </p>
     </div>
 
+    <!-- Login Screen -->
     <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center z-[100] hidden">
         <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
             <div class="text-center mb-8">
@@ -107,6 +112,7 @@
         </div>
     </div>
 
+    <!-- Sidebar -->
     <aside class="w-64 themed-panel shadow-lg hidden md:flex flex-col h-full z-10 relative border-r themed-border">
         <div class="p-6 border-b themed-border flex items-center gap-3">
             <div class="bg-gray-900 text-white p-2 rounded-lg shadow-sm border border-gray-800">
@@ -124,7 +130,6 @@
                 <i class="fa-solid fa-hard-hat w-5 text-center"></i> Contractors
             </button>
 
-            <!-- Admin Only Menu Item -->
             <button onclick="switchView('users')" id="navUsers" class="hidden w-full items-center gap-3 px-4 py-3 themed-muted themed-hover rounded-lg font-medium transition-colors text-left">
                 <i class="fa-solid fa-users-gear w-5 text-center"></i> Manage Users
             </button>
@@ -151,9 +156,9 @@
         </div>
     </aside>
 
-    <!-- Main Content Area -->
     <main class="flex-1 flex flex-col h-full relative overflow-hidden">
         
+        <!-- Mobile Header -->
         <header class="md:hidden themed-panel shadow-sm border-b themed-border p-4 flex justify-between items-center z-10">
             <div class="flex items-center gap-2">
                 <div class="bg-gray-900 text-white p-1.5 rounded-lg border border-gray-800">
@@ -173,6 +178,7 @@
             </div>
         </header>
 
+        <!-- VIEW: Package Dashboard -->
         <div id="view-dashboard" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
             <div class="max-w-7xl mx-auto space-y-6">
                 <!-- Page Header -->
@@ -186,6 +192,7 @@
                     </button>
                 </div>
 
+                <!-- Stats Row -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
                         <div class="w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl border border-blue-500/20"><i class="fa-solid fa-cubes"></i></div>
@@ -210,6 +217,7 @@
                     </div>
                 </div>
 
+                <!-- Package List Table -->
                 <div class="themed-panel rounded-xl shadow-sm border themed-border overflow-hidden flex flex-col relative min-h-[400px]">
                     <div class="p-5 border-b themed-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-black/5">
                         <h3 class="text-lg font-semibold themed-text">Inventory Logs</h3>
@@ -267,6 +275,7 @@
             </div>
         </div>
 
+        <!-- VIEW: Contractor Dashboard -->
         <div id="view-contractors" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative">
             <div class="max-w-7xl mx-auto space-y-6">
                 <!-- Page Header -->
@@ -280,6 +289,7 @@
                     </button>
                 </div>
 
+                <!-- Stats Row -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
                         <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl border border-amber-500/20"><i class="fa-solid fa-hard-hat"></i></div>
@@ -297,6 +307,7 @@
                     </div>
                 </div>
 
+                <!-- Contractor List Table -->
                 <div class="themed-panel rounded-xl shadow-sm border themed-border overflow-hidden flex flex-col relative min-h-[400px]">
                     <div class="p-5 border-b themed-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-black/5">
                         <h3 class="text-lg font-semibold themed-text">Access Logs</h3>
@@ -344,6 +355,7 @@
             </div>
         </div>
 
+        <!-- VIEW: Manage Users (Admin Only) -->
         <div id="view-users" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative">
             <div class="max-w-5xl mx-auto space-y-6">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -377,6 +389,7 @@
         </div>
     </main>
 
+    <!-- Modal: Log New Package -->
     <div id="logPackageModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="themed-panel w-full max-w-lg rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar transform scale-95 transition-transform duration-200" id="logModalContent">
             
@@ -393,24 +406,52 @@
                 <form id="logPackageForm" onsubmit="handleLogPackage(event)">
                     <div class="space-y-5">
                         
+                        <!-- AI & Barcode Viewport (Hidden by default) -->
                         <div id="packageScannerContainer" class="hidden w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-inner border border-gray-600">
-                            <video id="packageScannerVideo" class="w-full h-full object-cover" playsinline autoplay></video>
-                            <div class="absolute inset-0 border-2 border-blue-500/50 m-6 rounded-lg pointer-events-none"></div>
+                            <!-- html5-qrcode targets this div -->
+                            <div id="packageBarcodeReader" class="w-full h-full hidden"></div>
                             
+                            <!-- Standard video for OCR -->
+                            <video id="packageOCRVideo" class="w-full h-full object-cover hidden" playsinline autoplay></video>
+                            
+                            <div id="scannerOverlay" class="absolute inset-0 border-2 border-blue-500/50 m-6 rounded-lg pointer-events-none hidden"></div>
+                            
+                            <!-- Scanner Controls -->
                             <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
                                 <button type="button" onclick="stopPackageScanner()" class="bg-gray-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-red-600"><i class="fa-solid fa-times"></i></button>
-                                <button type="button" onclick="capturePackageLabel()" class="bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-500"><i class="fa-solid fa-camera"></i></button>
+                                <button type="button" id="btnCaptureOCR" onclick="capturePackageLabelOCR()" class="hidden bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-500"><i class="fa-solid fa-camera"></i></button>
                             </div>
                             
+                            <!-- Loading States -->
                             <div id="scannerLoading" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-20">
                                 <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2 text-blue-400"></i>
-                                <p class="text-sm font-medium">Scanning AI Label...</p>
+                                <p class="text-sm font-medium" id="scannerLoadingText">Scanning...</p>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold themed-text mb-1">Resident Name / Unit <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
+                                <span>Resident Name / Unit <span class="text-red-500">*</span></span>
+                                <!-- OCR Name Scanner Button -->
+                                <button type="button" onclick="startPackageOCRScanner()" class="text-blue-500 hover:text-blue-400 bg-blue-500/10 px-2 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1 border border-blue-500/20">
+                                    <i class="fa-solid fa-font"></i> Scan Name
+                                </button>
+                            </label>
                             <input type="text" id="residentName" required placeholder="e.g. Jane Doe - Apt 4B" class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-shadow">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
+                                <span>Tracking Number</span>
+                                <!-- Hardware Barcode Scanner Button -->
+                                <button type="button" onclick="startPackageBarcodeScanner()" class="text-green-500 hover:text-green-400 bg-green-500/10 px-2 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1 border border-green-500/20">
+                                    <i class="fa-solid fa-barcode"></i> Scan Barcode
+                                </button>
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="trackingNumber" placeholder="Scan or type tracking #" class="themed-input w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm uppercase">
+                                <i class="fa-solid fa-barcode absolute left-3 top-3.5 themed-muted"></i>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -440,19 +481,6 @@
                                 </select>
                             </div>
                         </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
-                                <span>Tracking Number</span>
-                                <button type="button" onclick="startPackageScanner()" class="text-blue-500 hover:text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full text-xs font-bold transition-colors flex items-center gap-1 border border-blue-500/20">
-                                    <i class="fa-solid fa-expand"></i> Scan Label
-                                </button>
-                            </label>
-                            <div class="relative">
-                                <input type="text" id="trackingNumber" placeholder="Scan or type tracking #" class="themed-input w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm uppercase">
-                                <i class="fa-solid fa-barcode absolute left-3 top-3.5 themed-muted"></i>
-                            </div>
-                        </div>
                         
                         <div class="bg-blue-500/5 p-4 rounded-lg border border-blue-500/10 mt-2">
                              <label class="block text-sm font-bold themed-text mb-1"><i class="fa-solid fa-clock text-blue-500 mr-1"></i> Received Timestamp</label>
@@ -475,6 +503,7 @@
         </div>
     </div>
 
+    <!-- Modal: Log New Contractor -->
     <div id="logContractorModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="themed-panel w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200 flex flex-col max-h-[90vh]" id="logContractorContent">
             
@@ -493,6 +522,25 @@
                         
                         <!-- Left Column: Form Details -->
                         <div class="flex-1 space-y-4">
+                            
+                            <!-- DL Scanner Container (Hidden by default) -->
+                            <div id="dlScannerContainer" class="hidden w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-inner border border-gray-600 mb-4">
+                                <div id="dlBarcodeReader" class="w-full h-full"></div>
+                                <div class="absolute bottom-2 left-0 right-0 flex justify-center z-10">
+                                    <button type="button" onclick="stopDLScanner()" class="bg-gray-800 text-white px-4 py-2 rounded-full shadow-lg hover:bg-red-600 text-sm"><i class="fa-solid fa-times"></i> Cancel Scan</button>
+                                </div>
+                            </div>
+
+                            <div class="border-b themed-border pb-4">
+                                <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
+                                    <span>Contractor Full Name <span class="text-red-500">*</span></span>
+                                    <button type="button" onclick="startDLScanner()" class="text-amber-500 hover:text-amber-400 bg-amber-500/10 px-2 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1 border border-amber-500/20">
+                                        <i class="fa-solid fa-id-card"></i> Scan DL (Back)
+                                    </button>
+                                </label>
+                                <input type="text" id="contractorName" required placeholder="e.g. John Doe" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                            </div>
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-semibold themed-text mb-1">Unit Number <span class="text-red-500">*</span></label>
@@ -501,13 +549,6 @@
                                 <div>
                                     <label class="block text-sm font-semibold themed-text mb-1">Resident Name</label>
                                     <input type="text" id="contractorResident" placeholder="Optional" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
-                                </div>
-                            </div>
-
-                            <div class="border-t themed-border pt-4">
-                                <div>
-                                    <label class="block text-sm font-semibold themed-text mb-1">Contractor Full Name <span class="text-red-500">*</span></label>
-                                    <input type="text" id="contractorName" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
                                 </div>
                             </div>
 
@@ -537,6 +578,7 @@
                             </div>
                         </div>
 
+                        <!-- Right Column: Camera & Badge -->
                         <div class="w-full md:w-64 flex flex-col space-y-4">
                             <label class="block text-sm font-semibold themed-text text-center">Contractor Photo</label>
                             
@@ -584,6 +626,7 @@
         </div>
     </div>
 
+    <!-- Modal: Deliver Package -->
     <div id="deliverPackageModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="themed-panel w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="deliverModalContent">
             <div class="flex justify-between items-center p-6 border-b themed-border">
@@ -665,6 +708,7 @@
         </div>
     </div>
 
+    <!-- Modal: Add New User -->
     <div id="addUserModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="themed-panel w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="addUserContent">
             <div class="flex justify-between items-center p-6 border-b themed-border">
@@ -710,6 +754,7 @@
         </div>
     </div>
 
+    <!-- Modal: Delete Confirmation -->
     <div id="deletePackageModal" class="fixed inset-0 bg-red-900/40 backdrop-blur-sm hidden z-[60] flex items-center justify-center p-4">
         <div class="themed-panel w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden p-6 text-center transform scale-95 transition-transform duration-200 border border-red-500/20" id="deleteModalContent">
             <div class="mx-auto w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center text-2xl mb-4 border border-red-500/20 shadow-inner">
@@ -742,6 +787,7 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-[200] flex flex-col gap-2"></div>
 
     <script type="module">
@@ -769,14 +815,16 @@
         let systemUsersData = [];
         let contractorsData = []; 
         
+        // Camera & Scanner State variables
         let videoStream = null; 
         let capturedImageBase64 = null; 
-        let packageVideoStream = null; 
+        let packageOCRVideoStream = null; 
+        let html5QrCode_Package = null;
+        let html5QrCode_DL = null;
 
         const el = (id) => document.getElementById(id);
 
         async function initApp() {
-            // Apply saved theme preference immediately
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'dark') {
                 document.documentElement.classList.add('dark-theme');
@@ -824,15 +872,8 @@
         async function bootstrapSystem() {
             const usersRef = collection(db, 'system', appId, 'users');
             const usersSnap = await getDocs(usersRef); 
-            
             if (usersSnap.empty) {
-                await addDoc(usersRef, {
-                    name: "System Admin",
-                    username: "admin",
-                    password: "password",
-                    role: "admin",
-                    created: new Date().toISOString()
-                });
+                await addDoc(usersRef, { name: "System Admin", username: "admin", password: "password", role: "admin", created: new Date().toISOString() });
             }
         }
 
@@ -841,20 +882,16 @@
             const u = el('loginUsername').value.trim();
             const p = el('loginPassword').value.trim();
             const btn = el('loginBtn');
-            
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
             btn.disabled = true;
 
             try {
                 const usersRef = collection(db, 'system', appId, 'users');
                 const usersSnap = await getDocs(usersRef);
-                
                 let foundUser = null;
                 usersSnap.forEach(doc => {
                     const data = doc.data();
-                    if (data.username === u && data.password === p) {
-                        foundUser = { id: doc.id, ...data };
-                    }
+                    if (data.username === u && data.password === p) foundUser = { id: doc.id, ...data };
                 });
 
                 if (foundUser) {
@@ -868,11 +905,9 @@
                     showToast("Invalid username or password.", "error");
                 }
             } catch (err) {
-                console.error("Login Error:", err);
                 showToast("System error during login. Check console.", "error");
             } finally {
-                btn.innerHTML = 'Sign In <i class="fa-solid fa-arrow-right"></i>';
-                btn.disabled = false;
+                btn.innerHTML = 'Sign In <i class="fa-solid fa-arrow-right"></i>'; btn.disabled = false;
             }
         };
 
@@ -883,23 +918,19 @@
             let initials = currentUserInfo.name.charAt(0).toUpperCase();
 
             if (currentUserInfo.role === 'admin') {
-                displayRole = "Manager / Admin";
-                color = "bg-red-500/10 text-red-500 border-red-500/30";
-                el('navUsers').classList.remove('hidden');
-                el('navUsers').classList.add('flex');
+                displayRole = "Manager / Admin"; color = "bg-red-500/10 text-red-500 border-red-500/30";
+                el('navUsers').classList.remove('hidden'); el('navUsers').classList.add('flex');
             } else {
                 if(currentUserInfo.role === 'frontdesk') displayRole = "Front Desk";
                 if(currentUserInfo.role === 'receiving') displayRole = "Receiving";
-                el('navUsers').classList.add('hidden');
-                el('navUsers').classList.remove('flex');
+                el('navUsers').classList.add('hidden'); el('navUsers').classList.remove('flex');
             }
 
             el('userRoleDisplay').textContent = displayRole;
             el('userAvatar').className = `w-9 h-9 rounded-full flex items-center justify-center font-bold border ${color}`;
             el('userAvatar').textContent = initials;
 
-            subscribeToPackages();
-            subscribeToContractors(); 
+            subscribeToPackages(); subscribeToContractors(); 
             if (currentUserInfo.role === 'admin') subscribeToUsers();
             
             switchView('dashboard');
@@ -910,15 +941,11 @@
             if (unsubscribeUsers) unsubscribeUsers();
             if (window.unsubscribeContractors) window.unsubscribeContractors(); 
             
-            if(videoStream) stopCamera(); 
-            if(packageVideoStream) stopPackageScanner();
+            stopCamera(); stopPackageScanner(); stopDLScanner();
             
-            currentUserInfo = null;
-            localStorage.removeItem('parcelLogUser'); 
+            currentUserInfo = null; localStorage.removeItem('parcelLogUser'); 
             el('loginScreen').classList.remove('hidden');
-            el('view-dashboard').classList.add('hidden');
-            el('view-contractors').classList.add('hidden');
-            el('view-users').classList.add('hidden');
+            el('view-dashboard').classList.add('hidden'); el('view-contractors').classList.add('hidden'); el('view-users').classList.add('hidden');
         };
 
         window.toggleTheme = () => {
@@ -940,16 +967,13 @@
 
         window.switchView = (viewName) => {
             const inactiveClass = 'w-full flex items-center gap-3 px-4 py-3 themed-muted themed-hover rounded-lg font-medium transition-colors text-left';
-            el('navDashboard').className = inactiveClass;
-            el('navContractors').className = inactiveClass;
+            el('navDashboard').className = inactiveClass; el('navContractors').className = inactiveClass;
             if(currentUserInfo?.role === 'admin') el('navUsers').className = inactiveClass;
             
             el('mobileNavDashboard').className = 'themed-muted flex flex-col items-center';
             el('mobileNavContractors').className = 'themed-muted flex flex-col items-center';
 
-            el('view-dashboard').classList.add('hidden');
-            el('view-contractors').classList.add('hidden');
-            el('view-users').classList.add('hidden');
+            el('view-dashboard').classList.add('hidden'); el('view-contractors').classList.add('hidden'); el('view-users').classList.add('hidden');
 
             if (viewName === 'dashboard') {
                 el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 bg-blue-500/10 text-blue-500 rounded-lg font-medium transition-colors text-left border border-blue-500/10';
@@ -974,54 +998,35 @@
                 snapshot.forEach((doc) => packagesData.push({ id: doc.id, ...doc.data() }));
                 renderPackages();
                 el('tableLoading').classList.add('hidden');
-            }, (error) => {
-                console.error("Packages Subscription Error: ", error);
-                showToast("Error syncing package data.", "error");
-            });
+            }, (error) => { showToast("Error syncing package data.", "error"); });
         }
 
         window.renderPackages = () => {
-            const tbody = el('packageTableBody');
-            const emptyState = el('emptyState');
-            const searchTerm = el('searchInput').value.toLowerCase();
-            const statusFilter = el('filterStatus').value;
+            const tbody = el('packageTableBody'); const emptyState = el('emptyState');
+            const searchTerm = el('searchInput').value.toLowerCase(); const statusFilter = el('filterStatus').value;
 
             tbody.innerHTML = '';
-
             let filtered = packagesData.filter(pkg => {
-                const searchMatch = (pkg.residentName || "").toLowerCase().includes(searchTerm) || 
-                                    (pkg.trackingNumber || "").toLowerCase().includes(searchTerm);
+                const searchMatch = (pkg.residentName || "").toLowerCase().includes(searchTerm) || (pkg.trackingNumber || "").toLowerCase().includes(searchTerm);
                 const statusMatch = statusFilter === 'all' || pkg.status === statusFilter;
                 return searchMatch && statusMatch;
             });
-
             filtered.sort((a, b) => {
                 if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
                 return new Date(b.receiveDate || 0) - new Date(a.receiveDate || 0);
             });
-
             updateStats();
 
             if (filtered.length === 0) {
-                tbody.parentElement.parentElement.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('flex');
+                tbody.parentElement.parentElement.classList.add('hidden'); emptyState.classList.remove('hidden'); emptyState.classList.add('flex');
             } else {
-                tbody.parentElement.parentElement.classList.remove('hidden');
-                emptyState.classList.add('hidden');
-                emptyState.classList.remove('flex');
-
+                tbody.parentElement.parentElement.classList.remove('hidden'); emptyState.classList.add('hidden'); emptyState.classList.remove('flex');
                 filtered.forEach(pkg => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'themed-hover transition-colors border-b themed-border last:border-0 themed-panel';
+                    const tr = document.createElement('tr'); tr.className = 'themed-hover transition-colors border-b themed-border last:border-0 themed-panel';
                     
                     let statusHtml = pkg.status === 'pending' 
-                        ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> Awaiting Pickup
-                           </span>`
-                        : `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-600 border border-green-500/20">
-                            <i class="fa-solid fa-check mr-1"></i> Delivered
-                           </span>`;
+                        ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20"><span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> Awaiting Pickup</span>`
+                        : `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-600 border border-green-500/20"><i class="fa-solid fa-check mr-1"></i> Delivered</span>`;
 
                     let icon = 'fa-box';
                     if(pkg.type === 'Envelope') icon = 'fa-envelope';
@@ -1031,39 +1036,16 @@
                     const receivedStr = new Date(pkg.receiveDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     const delivStr = pkg.deliveredDate ? new Date(pkg.deliveredDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
-                    const staffHtml = `
-                        <div class="text-xs themed-muted">
-                            <span class="block"><b class="themed-text">In:</b> ${pkg.loggedBy || 'System'}</span>
-                            ${pkg.status === 'delivered' ? `<span class="block mt-1"><b class="themed-text">Out:</b> ${pkg.deliveredBy || 'System'}</span>` : ''}
-                        </div>
-                    `;
-
-                    const delBtn = currentUserInfo?.role === 'admin' ? 
-                        `<button onclick="openDeleteModal('${pkg.id}', 'package')" class="themed-muted hover:text-red-500 transition-colors p-2 rounded hover:bg-black/5" title="Delete Record"><i class="fa-solid fa-trash"></i></button>` : '';
+                    const staffHtml = `<div class="text-xs themed-muted"><span class="block"><b class="themed-text">In:</b> ${pkg.loggedBy || 'System'}</span>${pkg.status === 'delivered' ? `<span class="block mt-1"><b class="themed-text">Out:</b> ${pkg.deliveredBy || 'System'}</span>` : ''}</div>`;
+                    const delBtn = currentUserInfo?.role === 'admin' ? `<button onclick="openDeleteModal('${pkg.id}', 'package')" class="themed-muted hover:text-red-500 transition-colors p-2 rounded hover:bg-black/5" title="Delete Record"><i class="fa-solid fa-trash"></i></button>` : '';
 
                     let actionsHtml = pkg.status === 'pending'
-                        ? `<div class="flex items-center justify-end gap-2">
-                             ${delBtn}
-                             <button onclick="openDeliverModal('${pkg.id}')" class="themed-input border themed-text hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/30 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm">
-                               Hand Off
-                             </button>
-                           </div>`
-                        : `<div class="flex items-center justify-end gap-2 text-right">
-                             ${delBtn}
-                             <div>
-                                <span class="text-xs font-medium themed-text block">To: ${pkg.pickedUpBy}</span>
-                                <span class="text-xs themed-muted block">${delivStr}</span>
-                             </div>
-                           </div>`;
+                        ? `<div class="flex items-center justify-end gap-2">${delBtn}<button onclick="openDeliverModal('${pkg.id}')" class="themed-input border themed-text hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/30 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm">Hand Off</button></div>`
+                        : `<div class="flex items-center justify-end gap-2 text-right">${delBtn}<div><span class="text-xs font-medium themed-text block">To: ${pkg.pickedUpBy}</span><span class="text-xs themed-muted block">${delivStr}</span></div></div>`;
 
                     tr.innerHTML = `
                         <td class="px-6 py-4 font-semibold themed-text">${pkg.residentName}</td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded bg-black/5 flex items-center justify-center themed-muted shadow-inner border themed-border"><i class="fa-solid ${icon} text-sm"></i></div>
-                                <div><div class="text-sm font-bold themed-text">${pkg.carrier}</div><div class="text-xs themed-muted font-medium">${pkg.type}</div></div>
-                            </div>
-                        </td>
+                        <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-black/5 flex items-center justify-center themed-muted shadow-inner border themed-border"><i class="fa-solid ${icon} text-sm"></i></div><div><div class="text-sm font-bold themed-text">${pkg.carrier}</div><div class="text-xs themed-muted font-medium">${pkg.type}</div></div></div></td>
                         <td class="px-6 py-4">${pkg.trackingNumber ? `<span class="font-mono text-xs font-bold bg-black/5 px-2 py-1 rounded border themed-border themed-text">${pkg.trackingNumber}</span>` : `<span class="themed-muted italic text-xs">N/A</span>`}</td>
                         <td class="px-6 py-4 text-sm themed-muted font-medium">${receivedStr}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${statusHtml}</td>
@@ -1080,16 +1062,12 @@
         function updateStats() {
             const today = new Date().toDateString();
             let total = 0, pending = 0, delivered = 0;
-
             packagesData.forEach(p => {
                 if (p.receiveDate && new Date(p.receiveDate).toDateString() === today) total++;
                 if (p.status === 'pending') pending++;
                 if (p.status === 'delivered' && p.deliveredDate && new Date(p.deliveredDate).toDateString() === today) delivered++;
             });
-
-            el('stat-total').textContent = total;
-            el('stat-pending').textContent = pending;
-            el('stat-delivered').textContent = delivered;
+            el('stat-total').textContent = total; el('stat-pending').textContent = pending; el('stat-delivered').textContent = delivered;
         }
 
         window.openLogModal = () => {
@@ -1109,108 +1087,85 @@
 
         window.handleLogPackage = async (e) => {
             e.preventDefault();
-            const btn = el('savePackageBtn');
-            const orig = btn.innerHTML;
+            const btn = el('savePackageBtn'); const orig = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; btn.disabled = true;
 
             const pkg = {
-                residentName: el('residentName').value,
-                carrier: el('carrier').value,
-                type: el('packageType').value,
-                trackingNumber: el('trackingNumber').value.toUpperCase(),
-                receiveDate: el('receiveDate').value,
-                status: 'pending',
-                deliveredDate: null, pickedUpBy: null,
-                loggedBy: currentUserInfo.name,
-                timestamp: serverTimestamp()
+                residentName: el('residentName').value, carrier: el('carrier').value, type: el('packageType').value,
+                trackingNumber: el('trackingNumber').value.toUpperCase(), receiveDate: el('receiveDate').value,
+                status: 'pending', deliveredDate: null, pickedUpBy: null, loggedBy: currentUserInfo.name, timestamp: serverTimestamp()
             };
 
             try {
                 await addDoc(collection(db, 'system', appId, 'packages'), pkg);
-                showToast('Package securely logged!', 'success');
-                closeLogModal();
-            } catch (err) {
-                showToast("Failed to save record.", "error");
-            } finally {
-                btn.innerHTML = orig; btn.disabled = false;
-            }
+                showToast('Package securely logged!', 'success'); closeLogModal();
+            } catch (err) { showToast("Failed to save record.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
         };
 
-        window.openDeliverModal = (id) => {
-            const pkg = packagesData.find(p => p.id === id);
-            if (!pkg) return;
-            el('deliveryPackageId').value = pkg.id;
-            el('deliveryResidentName').textContent = pkg.residentName;
-            el('deliveryCarrierType').innerHTML = `${pkg.carrier} - ${pkg.type} ${pkg.trackingNumber ? `(#${pkg.trackingNumber})` : ''}`;
-            el('pickedUpBy').value = '';
-            
-            el('deliverPackageModal').classList.remove('hidden');
-            setTimeout(() => el('deliverModalContent').classList.remove('scale-95'), 10);
-        };
-
-        window.closeDeliverModal = () => {
-            el('deliverModalContent').classList.add('scale-95');
-            setTimeout(() => el('deliverPackageModal').classList.add('hidden'), 200);
-        };
-
-        window.setPickedUpByResident = () => {
-            const pkg = packagesData.find(p => p.id === el('deliveryPackageId').value);
-            if (pkg) el('pickedUpBy').value = pkg.residentName.split(' - ')[0];
-        };
-
-        window.handleDeliverPackage = async (e) => {
-            e.preventDefault();
-            const btn = el('confirmDeliverBtn');
-            const orig = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; btn.disabled = true;
-
-            try {
-                const ref = doc(db, 'system', appId, 'packages', el('deliveryPackageId').value);
-                await updateDoc(ref, {
-                    status: 'delivered', pickedUpBy: el('pickedUpBy').value,
-                    deliveredDate: new Date().toISOString(), deliveredBy: currentUserInfo.name
-                });
-                showToast('Delivery completed successfully.', 'success');
-                closeDeliverModal();
-            } catch (err) {
-                showToast("Failed to process handoff.", "error");
-            } finally {
-                btn.innerHTML = orig; btn.disabled = false;
-            }
-        };
-
-        window.startPackageScanner = async () => {
+        // -> Hardware Package Barcode Scanner (Using HTML5-QRCode)
+        window.startPackageBarcodeScanner = async () => {
+            stopPackageScanner(); // ensure clean slate
             el('packageScannerContainer').classList.remove('hidden');
-            el('scannerLoading').classList.add('hidden');
+            el('packageBarcodeReader').classList.remove('hidden');
+            el('scannerOverlay').classList.remove('hidden');
+            
+            html5QrCode_Package = new Html5Qrcode("packageBarcodeReader");
             try {
-                packageVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                el('packageScannerVideo').srcObject = packageVideoStream;
+                await html5QrCode_Package.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 100 } },
+                    (decodedText, decodedResult) => {
+                        html5QrCode_Package.stop();
+                        el('packageScannerContainer').classList.add('hidden');
+                        el('packageBarcodeReader').classList.add('hidden');
+                        el('scannerOverlay').classList.add('hidden');
+                        
+                        const tracking = decodedText.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                        el('trackingNumber').value = tracking;
+                        
+                        // Carrier Auto-Detect Logic
+                        if (/^1Z[0-9A-Z]{16}$/i.test(tracking)) el('carrier').value = 'UPS';
+                        else if (/^TBA[0-9]{12,15}$/i.test(tracking)) el('carrier').value = 'Amazon';
+                        else if (/^[0-9]{12,15}$/.test(tracking)) el('carrier').value = 'FedEx';
+                        else if (/^(9[0-9]{21}|[A-Z]{2}[0-9]{9}[A-Z]{2})$/i.test(tracking)) el('carrier').value = 'USPS';
+                        
+                        showToast("Barcode Scanned Successfully!", "success");
+                    }
+                );
+            } catch (err) {
+                showToast("Cannot access camera for barcode.", "error");
+                el('packageScannerContainer').classList.add('hidden');
+            }
+        };
+
+        // -> AI OCR Name Scanner (Using Tesseract)
+        window.startPackageOCRScanner = async () => {
+            stopPackageScanner(); 
+            el('packageScannerContainer').classList.remove('hidden');
+            el('packageOCRVideo').classList.remove('hidden');
+            el('scannerOverlay').classList.remove('hidden');
+            el('btnCaptureOCR').classList.remove('hidden');
+            
+            try {
+                packageOCRVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                el('packageOCRVideo').srcObject = packageOCRVideoStream;
             } catch (err) {
                 showToast("Camera access denied.", "error");
                 el('packageScannerContainer').classList.add('hidden');
             }
         };
 
-        window.stopPackageScanner = () => {
-            if (packageVideoStream) {
-                packageVideoStream.getTracks().forEach(track => track.stop());
-                packageVideoStream = null;
-            }
-            el('packageScannerContainer').classList.add('hidden');
-        };
-
-        window.capturePackageLabel = async () => {
-            const video = el('packageScannerVideo');
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth; 
-            canvas.height = video.videoHeight;
+        window.capturePackageLabelOCR = async () => {
+            const video = el('packageOCRVideo'); const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
             
             const ctx = canvas.getContext('2d');
-            // UPGRADE 1: Apply high-contrast grayscale filter to make barcode text pop for the AI
+            // AI High-Contrast Filter
             ctx.filter = 'grayscale(100%) contrast(200%)';
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             el('scannerLoading').classList.remove('hidden');
+            el('scannerLoadingText').textContent = "Extracting Name with AI...";
             const imgData = canvas.toDataURL('image/jpeg', 0.9);
             
             try {
@@ -1219,202 +1174,115 @@
                 const text = ret.data.text;
                 await worker.terminate();
                 
-                parseScannedLabel(text);
+                parseOCRName(text);
                 stopPackageScanner();
             } catch (err) {
-                console.error("OCR Error:", err);
-                showToast("Failed to read label text.", "error");
+                showToast("Failed to read text.", "error");
                 el('scannerLoading').classList.add('hidden');
             }
         };
 
-        function parseScannedLabel(text) {
-            // UPGRADE 2: Strip all spaces and hyphens to catch tracking numbers that the AI misread with gaps
-            const cleanTextForTracking = text.replace(/[\s-]/g, '').toUpperCase();
-            
-            let tracking = ""; 
-            let carrier = "";
+        function parseOCRName(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
             let name = "";
             
-            // Tracking Number Regex Library based on Carrier Standards
-            const upsRegex = /(1Z[0-9A-Z]{16})/i;
-            const amazonRegex = /(TBA[0-9]{12,15})/i;
-            const fedexRegex = /([0-9]{12}|[0-9]{15}|[0-9]{20})/;
-            const uspsRegex = /(9[0-9]{21}|[A-Z]{2}[0-9]{9}[A-Z]{2})/i;
-            const dhlRegex = /([0-9]{10})/;
-            
-            if (upsRegex.test(cleanTextForTracking)) {
-                tracking = cleanTextForTracking.match(upsRegex)[1];
-                carrier = "UPS";
-            } else if (amazonRegex.test(cleanTextForTracking)) {
-                tracking = cleanTextForTracking.match(amazonRegex)[1];
-                carrier = "Amazon";
-            } else if (uspsRegex.test(cleanTextForTracking)) {
-                tracking = cleanTextForTracking.match(uspsRegex)[1];
-                carrier = "USPS";
-            } else if (fedexRegex.test(cleanTextForTracking)) {
-                tracking = cleanTextForTracking.match(fedexRegex)[1];
-                carrier = "FedEx";
-            } else if (dhlRegex.test(cleanTextForTracking)) {
-                tracking = cleanTextForTracking.match(dhlRegex)[1];
-                carrier = "DHL";
-            }
-            
-            // UPGRADE 3: Smart Name Extraction
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-            
-            // Method A: Look specifically for "TO:" or "SHIP TO:" indicators
             for (let i = 0; i < lines.length; i++) {
                 const upperLine = lines[i].toUpperCase();
                 if (upperLine.includes('SHIP TO') || upperLine.includes('TO:') || upperLine.startsWith('TO ')) {
-                    
-                    // Check if name is on the same line (e.g. "TO: JOHN DOE")
                     let inlineName = upperLine.replace(/^(SHIP )?TO:?\s*/, '').trim();
-                    if (inlineName.length > 3 && !/\d/.test(inlineName)) {
-                        name = inlineName;
-                        break;
-                    }
-                    
-                    // Otherwise, name is likely on the very next line
-                    if (i + 1 < lines.length) {
-                        let nextLine = lines[i + 1].trim();
-                        // Street addresses have numbers. Names do not.
-                        if (!/\d/.test(nextLine)) { 
-                            name = nextLine;
-                            break;
-                        }
-                    }
+                    if (inlineName.length > 3 && !/\d/.test(inlineName)) { name = inlineName; break; }
+                    if (i + 1 < lines.length && !/\d/.test(lines[i + 1].trim())) { name = lines[i + 1].trim(); break; }
                 }
             }
-            
-            // Method B: Fallback - look for 2-4 word lines with NO numbers (Address rejection)
             if (!name) {
                 const excludes = ['TRACKING', 'USPS', 'UPS', 'FEDEX', 'AMAZON', 'PRIORITY', 'MAIL', 'GROUND', 'SHIP', 'LBS', 'WEIGHT', 'PKG', 'BOX'];
                 for (let line of lines) {
                     let uLine = line.toUpperCase();
-                    let isJunk = excludes.some(w => uLine.includes(w));
-                    let hasNumbers = /\d/.test(line); 
-                    let wordCount = line.split(/\s+/).length;
-                    
-                    if (!isJunk && !hasNumbers && wordCount >= 2 && wordCount <= 4 && line.length < 30) {
-                        name = line; 
-                        break;
+                    if (!excludes.some(w => uLine.includes(w)) && !/\d/.test(line) && line.split(/\s+/).length >= 2 && line.length < 30) {
+                        name = line; break;
                     }
                 }
             }
             
-            // Clean up the extracted data and input it into the form
             if (name) {
-                // Title Case the name (e.g. "JOHN DOE" -> "John Doe") and strip special characters
                 name = name.toLowerCase().replace(/\b\w/g, s => s.toUpperCase()).replace(/[^a-zA-Z\s-]/g, '').trim();
                 el('residentName').value = name;
-            }
-            
-            if (tracking) {
-                el('trackingNumber').value = tracking.toUpperCase();
-                if(carrier) el('carrier').value = carrier;
-            }
-            
-            if (tracking || name) {
-                showToast("Label scanned! Please verify info for accuracy.", "success");
+                showToast("Name extracted!", "success");
             } else {
-                showToast("Couldn't read tracking or name. Please type manually.", "error");
+                showToast("Couldn't find a clear name. Please type manually.", "error");
             }
         }
 
+        window.stopPackageScanner = () => {
+            if (packageOCRVideoStream) { packageOCRVideoStream.getTracks().forEach(t => t.stop()); packageOCRVideoStream = null; }
+            if (html5QrCode_Package) { try { html5QrCode_Package.stop(); } catch(e){} html5QrCode_Package = null; }
+            
+            el('packageScannerContainer').classList.add('hidden');
+            el('packageBarcodeReader').classList.add('hidden');
+            el('packageOCRVideo').classList.add('hidden');
+            el('scannerOverlay').classList.add('hidden');
+            el('scannerLoading').classList.add('hidden');
+            el('btnCaptureOCR').classList.add('hidden');
+        };
+
+        window.openDeliverModal = (id) => {
+            const pkg = packagesData.find(p => p.id === id); if (!pkg) return;
+            el('deliveryPackageId').value = pkg.id; el('deliveryResidentName').textContent = pkg.residentName;
+            el('deliveryCarrierType').innerHTML = `${pkg.carrier} - ${pkg.type} ${pkg.trackingNumber ? `(#${pkg.trackingNumber})` : ''}`;
+            el('pickedUpBy').value = '';
+            el('deliverPackageModal').classList.remove('hidden'); setTimeout(() => el('deliverModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeDeliverModal = () => { el('deliverModalContent').classList.add('scale-95'); setTimeout(() => el('deliverPackageModal').classList.add('hidden'), 200); };
+        window.setPickedUpByResident = () => { const pkg = packagesData.find(p => p.id === el('deliveryPackageId').value); if (pkg) el('pickedUpBy').value = pkg.residentName.split(' - ')[0]; };
+
+        window.handleDeliverPackage = async (e) => {
+            e.preventDefault(); const btn = el('confirmDeliverBtn'); const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; btn.disabled = true;
+            try {
+                await updateDoc(doc(db, 'system', appId, 'packages', el('deliveryPackageId').value), { status: 'delivered', pickedUpBy: el('pickedUpBy').value, deliveredDate: new Date().toISOString(), deliveredBy: currentUserInfo.name });
+                showToast('Delivery completed successfully.', 'success'); closeDeliverModal();
+            } catch (err) { showToast("Failed to process handoff.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        };
 
         window.subscribeToContractors = () => {
-            const ref = collection(db, 'system', appId, 'contractors');
-            window.unsubscribeContractors = onSnapshot(ref, (snapshot) => {
-                contractorsData = [];
-                snapshot.forEach(doc => contractorsData.push({ id: doc.id, ...doc.data() }));
-                renderContractors();
+            window.unsubscribeContractors = onSnapshot(collection(db, 'system', appId, 'contractors'), (snapshot) => {
+                contractorsData = []; snapshot.forEach(doc => contractorsData.push({ id: doc.id, ...doc.data() })); renderContractors();
             });
         };
 
         window.renderContractors = () => {
-            const tbody = el('contractorTableBody');
-            const emptyState = el('contractorEmptyState');
-            const searchTerm = el('searchContractorInput').value.toLowerCase();
-            const statusFilter = el('filterContractorStatus').value;
+            const tbody = el('contractorTableBody'); const emptyState = el('contractorEmptyState');
+            const searchTerm = el('searchContractorInput').value.toLowerCase(); const statusFilter = el('filterContractorStatus').value;
 
             tbody.innerHTML = '';
-
             let filtered = contractorsData.filter(c => {
-                const searchMatch = (c.name || "").toLowerCase().includes(searchTerm) || 
-                                    (c.company || "").toLowerCase().includes(searchTerm) ||
-                                    (c.unit || "").toLowerCase().includes(searchTerm);
+                const searchMatch = (c.name || "").toLowerCase().includes(searchTerm) || (c.company || "").toLowerCase().includes(searchTerm) || (c.unit || "").toLowerCase().includes(searchTerm);
                 const statusMatch = statusFilter === 'all' || c.status === statusFilter;
                 return searchMatch && statusMatch;
             });
+            filtered.sort((a, b) => { if (a.status !== b.status) return a.status === 'active' ? -1 : 1; return new Date(b.timeIn || 0) - new Date(a.timeIn || 0); });
 
-            filtered.sort((a, b) => {
-                if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
-                return new Date(b.timeIn || 0) - new Date(a.timeIn || 0);
-            });
-
-            const today = new Date().toDateString();
-            let active = 0, total = 0;
-            contractorsData.forEach(c => {
-                if (c.timeIn && new Date(c.timeIn).toDateString() === today) {
-                    total++; if (c.status === 'active') active++;
-                }
-            });
-            el('stat-active-contractors').textContent = active;
-            el('stat-total-contractors').textContent = total;
+            let active = 0, total = 0; const today = new Date().toDateString();
+            contractorsData.forEach(c => { if (c.timeIn && new Date(c.timeIn).toDateString() === today) { total++; if (c.status === 'active') active++; } });
+            el('stat-active-contractors').textContent = active; el('stat-total-contractors').textContent = total;
 
             if (filtered.length === 0) {
-                tbody.parentElement.parentElement.classList.add('hidden');
-                emptyState.classList.remove('hidden'); emptyState.classList.add('flex');
+                tbody.parentElement.parentElement.classList.add('hidden'); emptyState.classList.remove('hidden'); emptyState.classList.add('flex');
             } else {
-                tbody.parentElement.parentElement.classList.remove('hidden');
-                emptyState.classList.add('hidden'); emptyState.classList.remove('flex');
-
+                tbody.parentElement.parentElement.classList.remove('hidden'); emptyState.classList.add('hidden'); emptyState.classList.remove('flex');
                 filtered.forEach(c => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'themed-hover transition-colors border-b themed-border themed-panel';
-                    
+                    const tr = document.createElement('tr'); tr.className = 'themed-hover transition-colors border-b themed-border themed-panel';
                     const timeInStr = new Date(c.timeIn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    
-                    let statusHtml = c.status === 'active' 
-                        ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> On-Site
-                           </span>`
-                        : `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-black/5 themed-muted border themed-border">
-                            Checked Out
-                           </span>`;
-
-                    let iconHtml = c.photoData 
-                        ? `<img src="${c.photoData}" onclick="openImageModal('${c.photoData}')" class="w-8 h-8 rounded-full object-cover border themed-border shadow-sm cursor-pointer hover:opacity-75 transition-opacity ring-2 ring-transparent hover:ring-amber-500" title="Click to enlarge photo" />`
-                        : `<div class="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center themed-muted shadow-inner border themed-border"><i class="fa-solid fa-user text-xs"></i></div>`;
-
-                    let actionsHtml = c.status === 'active'
-                        ? `<div class="flex items-center justify-end gap-2">
-                             <button onclick="openCheckoutModal('${c.id}')" class="themed-input border themed-text hover:bg-black/5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm flex items-center gap-1">
-                               Checkout <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
-                             </button>
-                           </div>`
-                        : `<span class="text-xs themed-muted">Out: ${new Date(c.timeOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
-
-                    const delBtn = currentUserInfo?.role === 'admin' ? 
-                        `<button onclick="openDeleteModal('${c.id}', 'contractor')" class="themed-muted hover:text-red-500 transition-colors p-1.5 rounded hover:bg-black/5 ml-2" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>` : '';
+                    let statusHtml = c.status === 'active' ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20"><span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> On-Site</span>` : `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-black/5 themed-muted border themed-border">Checked Out</span>`;
+                    let iconHtml = c.photoData ? `<img src="${c.photoData}" onclick="openImageModal('${c.photoData}')" class="w-8 h-8 rounded-full object-cover border themed-border shadow-sm cursor-pointer hover:opacity-75 transition-opacity ring-2 ring-transparent hover:ring-amber-500" title="Click to enlarge photo" />` : `<div class="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center themed-muted shadow-inner border themed-border"><i class="fa-solid fa-user text-xs"></i></div>`;
+                    let actionsHtml = c.status === 'active' ? `<div class="flex items-center justify-end gap-2"><button onclick="openCheckoutModal('${c.id}')" class="themed-input border themed-text hover:bg-black/5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm flex items-center gap-1">Checkout <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i></button></div>` : `<span class="text-xs themed-muted">Out: ${new Date(c.timeOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+                    const delBtn = currentUserInfo?.role === 'admin' ? `<button onclick="openDeleteModal('${c.id}', 'contractor')" class="themed-muted hover:text-red-500 transition-colors p-1.5 rounded hover:bg-black/5 ml-2" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>` : '';
 
                     tr.innerHTML = `
-                        <td class="px-6 py-3">
-                            <div class="flex items-center gap-3">
-                                ${iconHtml}
-                                <div><div class="font-semibold themed-text">${c.name}</div>
-                                <div class="text-xs themed-muted">${c.phone || 'No phone'}</div></div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-3">
-                            <div class="text-sm font-medium themed-text">${c.serviceType}</div>
-                            <div class="text-xs themed-muted">${c.company || 'Independant'}</div>
-                        </td>
-                        <td class="px-6 py-3">
-                            <span class="font-bold themed-text">Unit ${c.unit}</span>
-                            ${c.resident ? `<div class="text-xs themed-muted">For: ${c.resident}</div>` : ''}
-                        </td>
+                        <td class="px-6 py-3"><div class="flex items-center gap-3">${iconHtml}<div><div class="font-semibold themed-text">${c.name}</div><div class="text-xs themed-muted">${c.phone || 'No phone'}</div></div></div></td>
+                        <td class="px-6 py-3"><div class="text-sm font-medium themed-text">${c.serviceType}</div><div class="text-xs themed-muted">${c.company || 'Independant'}</div></td>
+                        <td class="px-6 py-3"><span class="font-bold themed-text">Unit ${c.unit}</span>${c.resident ? `<div class="text-xs themed-muted">For: ${c.resident}</div>` : ''}</td>
                         <td class="px-6 py-3 text-sm themed-muted font-medium">${timeInStr}</td>
                         <td class="px-6 py-3 whitespace-nowrap">${statusHtml}</td>
                         <td class="px-6 py-3 whitespace-nowrap text-right"><div class="flex items-center justify-end">${actionsHtml} ${delBtn}</div></td>
@@ -1423,21 +1291,71 @@
                 });
             }
         };
-        window.filterContractors = () => renderContractors();
 
+        // -> DL PDF417 Barcode Scanner
+        window.startDLScanner = async () => {
+            el('dlScannerContainer').classList.remove('hidden');
+            html5QrCode_DL = new Html5Qrcode("dlBarcodeReader");
+            try {
+                await html5QrCode_DL.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 300, height: 150 } },
+                    (decodedText) => {
+                        // Successfully scanned AAMVA Barcode
+                        stopDLScanner();
+                        
+                        const name = parseAAMVA(decodedText);
+                        if(name) {
+                            el('contractorName').value = name;
+                            showToast("ID Scanned! Now take a photo.", "success");
+                            // Auto open front-facing photo camera
+                            startCamera(null);
+                        } else {
+                            showToast("Couldn't read ID format.", "error");
+                        }
+                    }
+                );
+            } catch(e) {
+                showToast("Camera error for DL Scanner.", "error");
+                el('dlScannerContainer').classList.add('hidden');
+            }
+        };
+
+        window.stopDLScanner = () => {
+            if (html5QrCode_DL) { try { html5QrCode_DL.stop(); } catch(e){} html5QrCode_DL = null; }
+            el('dlScannerContainer').classList.add('hidden');
+        };
+
+        function parseAAMVA(text) {
+            const cleanText = text.replace(/\r/g, '\n');
+            const lines = cleanText.split('\n');
+            let first = '', last = '';
+            
+            for (let line of lines) {
+                if (line.startsWith('DAC')) first = line.substring(3).trim();
+                else if (line.indexOf('DAC') > 0) first = line.substring(line.indexOf('DAC')+3).trim(); 
+                
+                if (line.startsWith('DCS')) last = line.substring(3).trim();
+                else if (line.indexOf('DCS') > 0) last = line.substring(line.indexOf('DCS')+3).trim();
+            }
+            
+            if(!first && !last) return null;
+            const titleCase = (str) => str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+            return `${titleCase(first)} ${titleCase(last)}`.trim();
+        }
+
+        // -> Photo Camera for Contractor Face
         window.startCamera = async (e) => {
             if(e) e.preventDefault();
             el('cameraPrompt').classList.add('hidden'); el('capturedPhoto').classList.add('hidden');
             el('cameraVideo').classList.remove('hidden');
-            el('btnCapture').disabled = false; el('btnCapture').classList.remove('hidden');
-            el('btnRetake').classList.add('hidden');
+            el('btnCapture').disabled = false; el('btnCapture').classList.remove('hidden'); el('btnRetake').classList.add('hidden');
             capturedImageBase64 = null;
-
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); // front facing preferred for portraits
                 el('cameraVideo').srcObject = videoStream;
             } catch (err) {
-                showToast("Could not access camera. Please allow permissions.", "error");
+                showToast("Camera permissions required.", "error");
                 el('cameraPrompt').classList.remove('hidden'); el('cameraVideo').classList.add('hidden'); el('btnCapture').disabled = true;
             }
         };
@@ -1445,131 +1363,80 @@
         window.capturePhoto = (e) => {
             if(e) e.preventDefault();
             const video = el('cameraVideo'); const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 640; let width = video.videoWidth || 640; let height = video.videoHeight || 480;
+            const MAX_WIDTH = 480; let width = video.videoWidth || 480; let height = video.videoHeight || 480;
             if (width > MAX_WIDTH) { height = Math.floor(height * (MAX_WIDTH / width)); width = MAX_WIDTH; }
             canvas.width = width; canvas.height = height;
             canvas.getContext('2d').drawImage(video, 0, 0, width, height);
             
             capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
-            el('cameraVideo').classList.add('hidden'); el('capturedPhoto').src = capturedImageBase64;
-            el('capturedPhoto').classList.remove('hidden');
+            el('cameraVideo').classList.add('hidden'); el('capturedPhoto').src = capturedImageBase64; el('capturedPhoto').classList.remove('hidden');
             el('btnCapture').classList.add('hidden'); el('btnRetake').classList.remove('hidden');
             stopCamera();
         };
 
-        window.stopCamera = () => { if (videoStream) { videoStream.getTracks().forEach(track => track.stop()); videoStream = null; } };
+        window.stopCamera = () => { if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; } };
 
-        // Functions for Image Lightbox
-        window.openImageModal = (src) => {
-            el('lightboxImage').src = src;
-            el('imageLightboxModal').classList.remove('hidden');
-        };
-
-        window.closeImageModal = () => {
-            el('imageLightboxModal').classList.add('hidden');
-            setTimeout(() => { el('lightboxImage').src = ''; }, 300); // Clear image after animation
-        };
+        window.openImageModal = (src) => { el('lightboxImage').src = src; el('imageLightboxModal').classList.remove('hidden'); };
+        window.closeImageModal = () => { el('imageLightboxModal').classList.add('hidden'); setTimeout(() => { el('lightboxImage').src = ''; }, 300); };
 
         window.openContractorModal = () => {
             el('logContractorForm').reset();
             el('cameraPrompt').classList.remove('hidden'); el('cameraVideo').classList.add('hidden'); el('capturedPhoto').classList.add('hidden');
             el('btnCapture').disabled = true; el('btnCapture').classList.remove('hidden'); el('btnRetake').classList.add('hidden');
             capturedImageBase64 = null;
-            el('logContractorModal').classList.remove('hidden');
-            setTimeout(() => el('logContractorContent').classList.remove('scale-95'), 10);
+            el('logContractorModal').classList.remove('hidden'); setTimeout(() => el('logContractorContent').classList.remove('scale-95'), 10);
         };
-
-        window.closeContractorModal = () => {
-            stopCamera();
-            el('logContractorContent').classList.add('scale-95');
-            setTimeout(() => el('logContractorModal').classList.add('hidden'), 200);
-        };
+        window.closeContractorModal = () => { stopCamera(); stopDLScanner(); el('logContractorContent').classList.add('scale-95'); setTimeout(() => el('logContractorModal').classList.add('hidden'), 200); };
 
         window.handleLogContractor = async (e) => {
-            e.preventDefault();
-            const btn = el('saveContractorBtn'); const orig = btn.innerHTML;
+            e.preventDefault(); const btn = el('saveContractorBtn'); const orig = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; btn.disabled = true;
-
             const contractor = {
-                unit: el('contractorUnit').value.toUpperCase(), resident: el('contractorResident').value,
-                name: el('contractorName').value, company: el('contractorCompany').value,
-                phone: el('contractorPhone').value, serviceType: el('contractorServiceType').value,
-                photoData: capturedImageBase64, status: 'active',
+                unit: el('contractorUnit').value.toUpperCase(), resident: el('contractorResident').value, name: el('contractorName').value, company: el('contractorCompany').value,
+                phone: el('contractorPhone').value, serviceType: el('contractorServiceType').value, photoData: capturedImageBase64, status: 'active',
                 timeIn: new Date().toISOString(), timeOut: null, loggedBy: currentUserInfo.name
             };
-
-            try {
-                await addDoc(collection(db, 'system', appId, 'contractors'), contractor);
-                showToast('Contractor logged successfully!', 'success');
-                closeContractorModal();
-            } catch (err) {
-                showToast("Failed to save record. Photo may be too large.", "error");
-            } finally { btn.innerHTML = orig; btn.disabled = false; }
+            try { await addDoc(collection(db, 'system', appId, 'contractors'), contractor); showToast('Contractor logged successfully!', 'success'); closeContractorModal(); } 
+            catch (err) { showToast("Failed to save record.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
         };
 
         window.openCheckoutModal = (id) => {
-            const c = contractorsData.find(x => x.id === id);
-            if(!c) return;
-            el('checkoutContractorId').value = c.id;
-            el('checkoutName').textContent = c.name; el('checkoutCompany').textContent = c.company || c.serviceType;
+            const c = contractorsData.find(x => x.id === id); if(!c) return;
+            el('checkoutContractorId').value = c.id; el('checkoutName').textContent = c.name; el('checkoutCompany').textContent = c.company || c.serviceType;
             if(c.photoData) { el('checkoutPhoto').src = c.photoData; el('checkoutPhoto').classList.remove('hidden'); el('checkoutNoPhoto').classList.add('hidden'); } 
             else { el('checkoutPhoto').classList.add('hidden'); el('checkoutNoPhoto').classList.remove('hidden'); }
-            el('checkoutContractorModal').classList.remove('hidden');
-            setTimeout(() => el('checkoutModalContent').classList.remove('scale-95'), 10);
+            el('checkoutContractorModal').classList.remove('hidden'); setTimeout(() => el('checkoutModalContent').classList.remove('scale-95'), 10);
         };
-
         window.closeCheckoutModal = () => { el('checkoutModalContent').classList.add('scale-95'); setTimeout(() => el('checkoutContractorModal').classList.add('hidden'), 200); };
-
         window.confirmCheckout = async () => {
-            const btn = el('btnConfirmCheckout'); const orig = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; btn.disabled = true;
-            try {
-                await updateDoc(doc(db, 'system', appId, 'contractors', el('checkoutContractorId').value), {
-                    status: 'checked-out', timeOut: new Date().toISOString(), checkedOutBy: currentUserInfo.name
-                });
-                showToast('Contractor checked out.', 'success'); closeCheckoutModal();
-            } catch (err) { showToast("Failed to checkout.", "error"); } 
-            finally { btn.innerHTML = orig; btn.disabled = false; }
+            const btn = el('btnConfirmCheckout'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; btn.disabled = true;
+            try { await updateDoc(doc(db, 'system', appId, 'contractors', el('checkoutContractorId').value), { status: 'checked-out', timeOut: new Date().toISOString(), checkedOutBy: currentUserInfo.name }); showToast('Contractor checked out.', 'success'); closeCheckoutModal(); } 
+            catch (err) { showToast("Failed to checkout.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
         };
 
         window.printDymoLabel = () => {
-            const name = el('contractorName').value; const company = el('contractorCompany').value; const unit = el('contractorUnit').value;
+            const name = el('contractorName').value; const unit = el('contractorUnit').value;
             if(!name || !unit) { showToast("Name and Unit are required to print a badge.", "error"); return; }
-            const btn = el('btnDymo'); const orig = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
+            const btn = el('btnDymo'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
             setTimeout(() => {
                 try {
-                    if (typeof dymo === 'undefined' || !dymo.label || !dymo.label.framework) {
-                        showToast("DYMO Service not detected. Simulated success.", "info");
-                    } else {
-                        const printers = dymo.label.framework.getPrinters();
-                        if (printers.length === 0) throw "No printers";
-                        showToast(`Badge sent to ${printers[0].name}`, "success");
-                    }
-                } catch(e) { showToast("Error communicating with printer.", "error"); } 
-                finally { btn.innerHTML = orig; }
+                    if (typeof dymo === 'undefined' || !dymo.label || !dymo.label.framework) { showToast("DYMO Service not detected. Simulated success.", "info"); } 
+                    else { const printers = dymo.label.framework.getPrinters(); if (printers.length === 0) throw "No printers"; showToast(`Badge sent to ${printers[0].name}`, "success"); }
+                } catch(e) { showToast("Error communicating with printer.", "error"); } finally { btn.innerHTML = orig; }
             }, 1000);
         };
 
         function subscribeToUsers() {
             unsubscribeUsers = onSnapshot(collection(db, 'system', appId, 'users'), (snapshot) => {
-                systemUsersData = [];
-                snapshot.forEach(doc => systemUsersData.push({ id: doc.id, ...doc.data() }));
-                renderUsersTable();
+                systemUsersData = []; snapshot.forEach(doc => systemUsersData.push({ id: doc.id, ...doc.data() })); renderUsersTable();
             });
         }
 
         function renderUsersTable() {
             const tbody = el('usersTableBody'); tbody.innerHTML = '';
             systemUsersData.forEach(user => {
-                const tr = document.createElement('tr');
-                tr.className = 'themed-hover themed-panel border-b themed-border last:border-0';
-                
-                let roleBadge = '';
-                if(user.role === 'admin') roleBadge = '<span class="bg-red-500/10 text-red-500 px-2 py-1 rounded text-xs font-bold border border-red-500/20">Manager (Admin)</span>';
-                else if(user.role === 'frontdesk') roleBadge = '<span class="bg-blue-500/10 text-blue-500 px-2 py-1 rounded text-xs font-bold border border-blue-500/20">Front Desk</span>';
-                else roleBadge = '<span class="bg-amber-500/10 text-amber-600 px-2 py-1 rounded text-xs font-bold border border-amber-500/20">Receiving</span>';
-
+                const tr = document.createElement('tr'); tr.className = 'themed-hover themed-panel border-b themed-border last:border-0';
+                let roleBadge = user.role === 'admin' ? '<span class="bg-red-500/10 text-red-500 px-2 py-1 rounded text-xs font-bold border border-red-500/20">Manager (Admin)</span>' : (user.role === 'frontdesk' ? '<span class="bg-blue-500/10 text-blue-500 px-2 py-1 rounded text-xs font-bold border border-blue-500/20">Front Desk</span>' : '<span class="bg-amber-500/10 text-amber-600 px-2 py-1 rounded text-xs font-bold border border-amber-500/20">Receiving</span>');
                 const delBtn = user.id === currentUserInfo.id ? `<span class="text-xs themed-muted italic">Current User</span>` : `<button onclick="openDeleteModal('${user.id}', 'user')" class="text-red-500 hover:bg-black/5 px-3 py-1 rounded transition-colors text-sm font-semibold border border-transparent hover:border-red-500/20">Revoke Access</button>`;
                 tr.innerHTML = `<td class="px-6 py-4 font-bold themed-text">${user.name}</td><td class="px-6 py-4 font-mono text-sm themed-muted">${user.username}</td><td class="px-6 py-4">${roleBadge}</td><td class="px-6 py-4 text-right">${delBtn}</td>`;
                 tbody.appendChild(tr);
@@ -1578,28 +1445,20 @@
 
         window.openAddUserModal = () => { el('addUserForm').reset(); el('addUserModal').classList.remove('hidden'); setTimeout(() => el('addUserContent').classList.remove('scale-95'), 10); };
         window.closeAddUserModal = () => { el('addUserContent').classList.add('scale-95'); setTimeout(() => el('addUserModal').classList.add('hidden'), 200); };
-        
         window.handleAddUser = async (e) => {
             e.preventDefault(); const btn = el('saveUserBtn'); const orig = btn.innerHTML; btn.innerHTML = 'Saving...'; btn.disabled = true;
-            if (systemUsersData.find(u => u.username.toLowerCase() === el('newUserUsername').value.toLowerCase())) {
-                showToast("Username already taken.", "error"); btn.innerHTML = orig; btn.disabled = false; return;
-            }
-            try {
-                await addDoc(collection(db, 'system', appId, 'users'), { name: el('newUserName').value, username: el('newUserUsername').value, password: el('newUserPassword').value, role: el('newUserRole').value, created: new Date().toISOString() });
-                showToast("Account created.", "success"); closeAddUserModal();
-            } catch (err) { showToast("Failed to create user.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+            if (systemUsersData.find(u => u.username.toLowerCase() === el('newUserUsername').value.toLowerCase())) { showToast("Username already taken.", "error"); btn.innerHTML = orig; btn.disabled = false; return; }
+            try { await addDoc(collection(db, 'system', appId, 'users'), { name: el('newUserName').value, username: el('newUserUsername').value, password: el('newUserPassword').value, role: el('newUserRole').value, created: new Date().toISOString() }); showToast("Account created.", "success"); closeAddUserModal(); } 
+            catch (err) { showToast("Failed to create user.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
         };
 
         window.openDeleteModal = (id, type) => { el('deleteTargetId').value = id; el('deleteTargetType').value = type; el('deletePackageModal').classList.remove('hidden'); setTimeout(() => el('deleteModalContent').classList.remove('scale-95'), 10); };
         window.closeDeleteModal = () => { el('deleteModalContent').classList.add('scale-95'); setTimeout(() => el('deletePackageModal').classList.add('hidden'), 200); };
-        
         window.confirmDeleteAction = async () => {
             const id = el('deleteTargetId').value; const type = el('deleteTargetType').value;
             let collName = type === 'user' ? 'users' : type === 'contractor' ? 'contractors' : 'packages';
-            try {
-                await deleteDoc(doc(db, 'system', appId, collName, id));
-                showToast(`Record deleted.`, "success"); closeDeleteModal();
-            } catch (err) { showToast("Deletion failed.", "error"); }
+            try { await deleteDoc(doc(db, 'system', appId, collName, id)); showToast(`Record deleted.`, "success"); closeDeleteModal(); } 
+            catch (err) { showToast("Deletion failed.", "error"); }
         };
 
         window.showToast = (msg, type = 'info') => {
@@ -1614,7 +1473,6 @@
         };
 
         window.addEventListener('DOMContentLoaded', initApp);
-
     </script>
 </body>
 </html>
