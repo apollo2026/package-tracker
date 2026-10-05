@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concierge Package Tracker - Pro Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+
+        .glass-modal {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .toast-enter {
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+        }
+        .toast-enter-active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        .toast-exit {
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease-in;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-gray-800 h-screen flex overflow-hidden">
+
+    <!-- Global App Loading Overlay -->
+    <div id="globalLoading" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center">
+        <i class="fa-solid fa-box-open text-primary-600 text-5xl mb-4 animate-bounce"></i>
+        <h2 class="text-2xl font-bold text-gray-800 tracking-tight">ParcelLog</h2>
+        <p class="text-gray-500 mt-2 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-circle-notch fa-spin"></i> Connecting to Database...
+        </p>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 bg-gray-100 z-[100] flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md animate-fade-in">
+            <div class="text-center mb-8">
+                <div class="bg-primary-600 text-white p-3 rounded-lg inline-block mb-3 shadow-md">
+                    <i class="fa-solid fa-box-open text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">ParcelLog Login</h1>
+                <p class="text-gray-500 mt-1 text-sm">Enter your staff credentials</p>
+            </div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="loginUsername" required class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="e.g. admin">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-3 text-gray-400"></i>
+                        <input type="password" id="loginPassword" required class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="••••••••">
+                    </div>
+                </div>
+                
+                <button type="submit" id="loginBtn" class="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white py-2.5 px-4 rounded-lg font-medium transition-colors mt-6 shadow-md">
+                    Sign In <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100 text-xs text-blue-800">
+                <p class="font-semibold mb-1"><i class="fa-solid fa-circle-info mr-1"></i> System Note:</p>
+                <p>If this is your first time loading the app, use username <strong>admin</strong> and password <strong>password</strong>.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg hidden md:flex flex-col h-full z-10 relative">
+        <div class="p-6 border-b border-gray-100 flex items-center gap-3">
+            <div class="bg-primary-600 text-white p-2 rounded-lg shadow-sm">
+                <i class="fa-solid fa-box-open text-xl"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800 tracking-tight">ParcelLog</h1>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <button onclick="switchView('dashboard')" id="navDashboard" class="w-full flex items-center gap-3 px-4 py-3 bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors text-left">
+                <i class="fa-solid fa-table-list w-5 text-center"></i> Dashboard
+            </button>
+            
+            <!-- Admin Only Menu Item -->
+            <button onclick="switchView('users')" id="navUsers" class="hidden w-full items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                <i class="fa-solid fa-users-gear w-5 text-center"></i> Manage Users
+            </button>
+        </nav>
+        
+        <div class="p-4 border-t border-gray-100 bg-gray-50/50">
+            <div class="flex items-center justify-between px-2 py-2">
+                <div class="flex items-center gap-3">
+                    <div id="userAvatar" class="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200">
+                        U
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900" id="userNameDisplay">Staff Member</p>
+                        <p class="text-xs text-primary-600 font-medium" id="userRoleDisplay">Active Shift</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50" title="Logout">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-gray-50">
+        
+        <!-- Mobile Header -->
+        <header class="md:hidden bg-white shadow-sm p-4 flex justify-between items-center z-10">
+            <div class="flex items-center gap-2">
+                <div class="bg-primary-600 text-white p-1.5 rounded-lg">
+                    <i class="fa-solid fa-box-open"></i>
+                </div>
+                <h1 class="text-lg font-bold">ParcelLog</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="switchView('dashboard')" id="mobileNavDashboard" class="text-primary-600"><i class="fa-solid fa-list"></i></button>
+                <button onclick="switchView('users')" id="mobileNavUsers" class="hidden text-gray-400"><i class="fa-solid fa-users"></i></button>
+                <button onclick="logout()" class="text-gray-500 hover:text-red-500 ml-2">
+                    <i class="fa-solid fa-power-off text-lg"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEW: Package Dashboard -->
+        <div id="view-dashboard" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <!-- Page Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Package Management</h2>
+                        <p class="text-sm text-gray-500 mt-1">Real-time synced inventory.</p>
+                    </div>
+                    <button onclick="openLogModal()" class="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm focus:ring-4 focus:ring-primary-100">
+                        <i class="fa-solid fa-plus"></i> Log New Package
+                    </button>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl border border-blue-100">
+                            <i class="fa-solid fa-cubes"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Today</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-total">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xl border border-amber-100">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Awaiting Pickup</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-pending">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xl border border-green-100">
+                            <i class="fa-solid fa-check-double"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Delivered Today</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-delivered">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Package List Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative min-h-[400px]">
+                    <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50">
+                        <h3 class="text-lg font-semibold text-gray-800">Inventory Logs</h3>
+                        
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" id="searchInput" placeholder="Search resident or tracking..." onkeyup="filterTable()" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+                                <i class="fa-solid fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                            </div>
+                            <select id="filterStatus" onchange="filterTable()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                                <option value="all">All Status</option>
+                                <option value="pending">Awaiting Pickup</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto custom-scrollbar flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
+                                    <th class="px-6 py-4 font-semibold">Resident</th>
+                                    <th class="px-6 py-4 font-semibold">Carrier & Type</th>
+                                    <th class="px-6 py-4 font-semibold">Tracking #</th>
+                                    <th class="px-6 py-4 font-semibold">Received</th>
+                                    <th class="px-6 py-4 font-semibold">Status</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="packageTableBody" class="divide-y divide-gray-100 text-sm">
+                                <!-- Package rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty States -->
+                    <div id="tableLoading" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 hidden">
+                        <div class="text-primary-600 flex flex-col items-center bg-white p-6 rounded-xl shadow-lg border border-primary-100">
+                            <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i>
+                            <span class="font-semibold mt-2">Syncing Database...</span>
+                        </div>
+                    </div>
+
+                    <div id="emptyState" class="hidden absolute inset-0 flex-col items-center justify-center bg-white z-0">
+                        <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4 border border-gray-100 shadow-sm">
+                            <i class="fa-solid fa-box-open text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-1">No packages found</h4>
+                        <p class="text-gray-500 text-sm max-w-sm text-center mb-6">There are currently no packages in the database matching your criteria.</p>
+                        <button onclick="openLogModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+                            Log a package
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Manage Users (Admin Only) -->
+        <div id="view-users" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative bg-gray-100">
+            <div class="max-w-5xl mx-auto space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">User Management</h2>
+                        <p class="text-sm text-gray-500 mt-1">Create and remove staff login credentials.</p>
+                    </div>
+                    <button onclick="openAddUserModal()" class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-user-plus"></i> Add New Staff
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
+                                    <th class="px-6 py-4 font-semibold">Staff Name</th>
+                                    <th class="px-6 py-4 font-semibold">Username</th>
+                                    <th class="px-6 py-4 font-semibold">Role/Position</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody" class="divide-y divide-gray-100 text-sm">
+                                <!-- User rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Log New Package -->
+    <div id="logPackageModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="logModalContent">
+            
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white/80">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-box text-primary-600"></i> Log Incoming Package
+                </h3>
+                <button onclick="closeLogModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 bg-white">
+                <form id="logPackageForm" onsubmit="handleLogPackage(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Resident Name / Unit <span class="text-red-500">*</span></label>
+                            <input type="text" id="residentName" required placeholder="e.g. Jane Doe - Apt 4B" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-shadow">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Carrier <span class="text-red-500">*</span></label>
+                                <select id="carrier" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="UPS">UPS</option>
+                                    <option value="FedEx">FedEx</option>
+                                    <option value="USPS">USPS</option>
+                                    <option value="Amazon">Amazon</option>
+                                    <option value="DHL">DHL</option>
+                                    <option value="Local Courier">Local Courier</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Package Type <span class="text-red-500">*</span></label>
+                                <select id="packageType" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Box">Box</option>
+                                    <option value="Envelope">Envelope</option>
+                                    <option value="Package">Standard Package</option>
+                                    <option value="Dry Cleaning">Dry Cleaning</option>
+                                    <option value="Medicine">Medicine</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Tracking Number</label>
+                            <div class="relative">
+                                <input type="text" id="trackingNumber" placeholder="Scan or type tracking #" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm uppercase">
+                                <i class="fa-solid fa-barcode absolute left-3 top-2.5 text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-2">
+                             <label class="block text-sm font-bold text-gray-700 mb-1"><i class="fa-solid fa-clock text-blue-500 mr-1"></i> Received Timestamp (Automated)</label>
+                             <p class="text-xs text-gray-500 mb-2">Time is automatically captured to ensure accurate logging.</p>
+                             <input type="text" id="receiveDateDisplay" disabled class="w-full px-4 py-2 border border-gray-300 bg-gray-100 text-gray-700 font-medium rounded-lg text-sm cursor-not-allowed">
+                             <input type="hidden" id="receiveDate">
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="closeLogModal()" class="px-5 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white">
+                            Cancel
+                        </button>
+                        <button type="submit" id="savePackageBtn" class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i> Save Record
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Mark as Delivered -->
+    <div id="deliverPackageModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="deliverModalContent">
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white/80">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-holding-box text-green-600"></i> Process Delivery
+                </h3>
+                <button onclick="closeDeliverModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 bg-white">
+                <div class="bg-gray-50 rounded-lg p-4 mb-5 border border-gray-200 shadow-inner">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide font-bold mb-1">Releasing Package For:</p>
+                    <p class="font-bold text-xl text-gray-900" id="deliveryResidentName">John Doe</p>
+                    <div class="flex gap-4 mt-2 text-sm text-gray-600">
+                        <span id="deliveryCarrierType" class="font-medium"></span>
+                    </div>
+                </div>
+
+                <form id="deliverPackageForm" onsubmit="handleDeliverPackage(event)">
+                    <input type="hidden" id="deliveryPackageId">
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Resident Receiving Package <span class="text-red-500">*</span></label>
+                            <input type="text" id="pickedUpBy" required placeholder="Name and Signature/Initials" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-shadow">
+                            <div class="mt-2 flex gap-2">
+                                <button type="button" onclick="setPickedUpByResident()" class="text-xs bg-white hover:bg-gray-50 text-gray-700 py-1.5 px-3 rounded-full transition-colors border border-gray-300 font-medium shadow-sm">
+                                    Same as Addressee
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="closeDeliverModal()" class="px-5 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white">
+                            Cancel
+                        </button>
+                        <button type="submit" id="confirmDeliverBtn" class="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-md transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-check-circle"></i> Complete Handoff
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add New User (Admin) -->
+    <div id="addUserModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="addUserContent">
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-primary-600"></i> Create Staff Login
+                </h3>
+                <button onclick="closeAddUserModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form id="addUserForm" onsubmit="handleAddUser(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Staff Full Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="e.g. Sarah Smith">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Login Username <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserUsername" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="e.g. ssmith">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Temporary Password <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserPassword" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="Assign a password">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Role / Department <span class="text-red-500">*</span></label>
+                        <select id="newUserRole" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white">
+                            <option value="frontdesk">Front Desk (Standard)</option>
+                            <option value="receiving">Receiving (Standard)</option>
+                            <option value="admin">Manager (Admin)</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Cancel</button>
+                        <button type="submit" id="saveUserBtn" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg shadow-sm">
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Delete Confirmation (Admin Only) -->
+    <div id="deletePackageModal" class="fixed inset-0 bg-red-900/40 backdrop-blur-sm hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden p-6 text-center transform scale-95 transition-transform duration-200" id="deleteModalContent">
+            <div class="mx-auto w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center text-2xl mb-4 border border-red-100">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Delete Record?</h3>
+            <p class="text-gray-500 text-sm mb-6">This action cannot be undone. It will permanently remove this item from the database.</p>
+            
+            <input type="hidden" id="deleteTargetId">
+            <input type="hidden" id="deleteTargetType">
+            
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeDeleteModal()" class="px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors w-full border border-gray-200">
+                    Cancel
+                </button>
+                <button onclick="confirmDeleteAction()" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm transition-colors w-full flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-[200] flex flex-col gap-2"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 👇 FIREBASE CONFIGURATION LOADED 👇
+        // ==========================================
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUhBrBkG8SSPvsv9e7BwnApate8jI1WVA",
+            authDomain: "buildingpackagetracker.firebaseapp.com",
+            projectId: "buildingpackagetracker",
+            storageBucket: "buildingpackagetracker.firebasestorage.app",
+            messagingSenderId: "571289687247",
+            appId: "1:571289687247:web:208fb17f010ee1b15cd3ba"
+        };
+        
+        const appId = 'my-building-tracker-v1'; 
+        
+        // ==========================================
+        
+        let app, db, auth;
+        let currentUserInfo = null; 
+        let unsubscribePackages = null;
+        let unsubscribeUsers = null;
+        
+        let packagesData = [];
+        let systemUsersData = [];
+
+        const el = (id) => document.getElementById(id);
+
+        async function initApp() {
+            try {
+                if(!firebaseConfig.apiKey) {
+                    el('globalLoading').innerHTML = `
+                        <div class="text-center p-6 bg-red-50 rounded-xl border border-red-200 max-w-lg">
+                            <i class="fa-solid fa-triangle-exclamation text-red-500 text-4xl mb-3"></i>
+                            <h2 class='text-red-700 font-bold text-xl mb-2'>Firebase Not Connected</h2>
+                            <p class="text-red-600 text-sm">You need to paste your Firebase Config into the HTML file before the app will load!</p>
+                        </div>`;
+                    return;
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                await signInAnonymously(auth);
+                await bootstrapSystem();
+                
+                el('globalLoading').classList.add('hidden');
+                el('loginScreen').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("App Init Failed:", error);
+                el('globalLoading').innerHTML = `<div class="text-center p-6"><h2 class='text-red-500 font-bold text-xl'>Connection Error</h2><p class="text-gray-600 mt-2">Failed to connect to the database. Check your Firebase config.</p></div>`;
+            }
+        }
+
+        async function bootstrapSystem() {
+            const usersRef = collection(db, 'system', appId, 'users');
+            const usersSnap = await getDocs(usersRef); 
+            
+            if (usersSnap.empty) {
+                await addDoc(usersRef, {
+                    name: "System Admin",
+                    username: "admin",
+                    password: "password",
+                    role: "admin",
+                    created: new Date().toISOString()
+                });
+                console.log("Default admin account created.");
+            }
+        }
+
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const u = el('loginUsername').value.trim();
+            const p = el('loginPassword').value.trim();
+            const btn = el('loginBtn');
+            
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
+            btn.disabled = true;
+
+            try {
+                const usersRef = collection(db, 'system', appId, 'users');
+                const usersSnap = await getDocs(usersRef);
+                
+                let foundUser = null;
+                usersSnap.forEach(doc => {
+                    const data = doc.data();
+                    if (data.username === u && data.password === p) {
+                        foundUser = { id: doc.id, ...data };
+                    }
+                });
+
+                if (foundUser) {
+                    currentUserInfo = foundUser;
+                    setupUserSession();
+                    el('loginScreen').classList.add('hidden');
+                    el('loginForm').reset();
+                    showToast(`Welcome back, ${foundUser.name}!`, "success");
+                } else {
+                    showToast("Invalid username or password.", "error");
+                }
+            } catch (err) {
+                console.error("Login Error:", err);
+                showToast("System error during login. Check console.", "error");
+            } finally {
+                btn.innerHTML = 'Sign In <i class="fa-solid fa-arrow-right"></i>';
+                btn.disabled = false;
+            }
+        };
+
+        function setupUserSession() {
+            el('userNameDisplay').textContent = currentUserInfo.name;
+            let displayRole = "Staff";
+            let color = "bg-primary-100 text-primary-700";
+            let initials = currentUserInfo.name.charAt(0).toUpperCase();
+
+            if (currentUserInfo.role === 'admin') {
+                displayRole = "Manager / Admin";
+                color = "bg-red-100 text-red-700 border-red-200";
+                el('navUsers').classList.remove('hidden');
+                el('navUsers').classList.add('flex');
+                el('mobileNavUsers').classList.remove('hidden');
+            } else if (currentUserInfo.role === 'frontdesk') {
+                displayRole = "Front Desk";
+                el('navUsers').classList.add('hidden');
+                el('mobileNavUsers').classList.add('hidden');
+            } else if (currentUserInfo.role === 'receiving') {
+                displayRole = "Receiving";
+                el('navUsers').classList.add('hidden');
+                el('mobileNavUsers').classList.add('hidden');
+            }
+
+            el('userRoleDisplay').textContent = displayRole;
+            el('userAvatar').className = `w-9 h-9 rounded-full flex items-center justify-center font-bold border ${color}`;
+            el('userAvatar').textContent = initials;
+
+            subscribeToPackages();
+            if (currentUserInfo.role === 'admin') subscribeToUsers();
+            
+            switchView('dashboard');
+        }
+
+        window.logout = () => {
+            if (unsubscribePackages) unsubscribePackages();
+            if (unsubscribeUsers) unsubscribeUsers();
+            currentUserInfo = null;
+            el('loginScreen').classList.remove('hidden');
+            el('view-dashboard').classList.remove('hidden');
+            el('view-users').classList.add('hidden');
+        };
+
+        window.switchView = (viewName) => {
+            el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left';
+            if(currentUserInfo?.role === 'admin') el('navUsers').className = 'w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left';
+            
+            el('view-dashboard').classList.add('hidden');
+            el('view-users').classList.add('hidden');
+
+            if (viewName === 'dashboard') {
+                el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors text-left';
+                el('view-dashboard').classList.remove('hidden');
+            } else if (viewName === 'users' && currentUserInfo?.role === 'admin') {
+                el('navUsers').className = 'w-full flex items-center gap-3 px-4 py-3 bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors text-left';
+                el('view-users').classList.remove('hidden');
+            }
+        };
+
+        function subscribeToPackages() {
+            el('tableLoading').classList.remove('hidden');
+            const packagesRef = collection(db, 'system', appId, 'packages');
+            
+            unsubscribePackages = onSnapshot(packagesRef, (snapshot) => {
+                packagesData = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    packagesData.push({ id: doc.id, ...data });
+                });
+                renderPackages();
+                el('tableLoading').classList.add('hidden');
+            }, (error) => {
+                console.error("Packages Subscription Error: ", error);
+                showToast("Error syncing package data.", "error");
+            });
+        }
+
+        window.renderPackages = () => {
+            const tbody = el('packageTableBody');
+            const emptyState = el('emptyState');
+            const searchTerm = el('searchInput').value.toLowerCase();
+            const statusFilter = el('filterStatus').value;
+
+            tbody.innerHTML = '';
+
+            let filtered = packagesData.filter(pkg => {
+                const searchMatch = (pkg.residentName || "").toLowerCase().includes(searchTerm) || 
+                                    (pkg.trackingNumber || "").toLowerCase().includes(searchTerm);
+                const statusMatch = statusFilter === 'all' || pkg.status === statusFilter;
+                return searchMatch && statusMatch;
+            });
+
+            filtered.sort((a, b) => {
+                if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
+                return new Date(b.receiveDate || 0) - new Date(a.receiveDate || 0);
+            });
+
+            updateStats();
+
+            if (filtered.length === 0) {
+                tbody.parentElement.parentElement.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                tbody.parentElement.parentElement.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                filtered.forEach(pkg => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 group bg-white';
+                    
+                    let statusHtml = pkg.status === 'pending' 
+                        ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> Awaiting Pickup
+                           </span>`
+                        : `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                            <i class="fa-solid fa-check mr-1"></i> Delivered
+                           </span>`;
+
+                    let icon = 'fa-box';
+                    if(pkg.type === 'Envelope') icon = 'fa-envelope';
+                    if(pkg.type === 'Dry Cleaning') icon = 'fa-shirt';
+                    if(pkg.type === 'Medicine') icon = 'fa-briefcase-medical';
+
+                    const receivedStr = new Date(pkg.receiveDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const delivStr = pkg.deliveredDate ? new Date(pkg.deliveredDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+
+                    const delBtn = currentUserInfo?.role === 'admin' ? 
+                        `<button onclick="openDeleteModal('${pkg.id}', 'package')" class="text-gray-400 hover:text-red-600 transition-colors p-2 rounded hover:bg-red-50" title="Delete Record"><i class="fa-solid fa-trash"></i></button>` : '';
+
+                    let actionsHtml = pkg.status === 'pending'
+                        ? `<div class="flex items-center justify-end gap-2">
+                             ${delBtn}
+                             <button onclick="openDeliverModal('${pkg.id}')" class="bg-white border border-gray-300 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-300 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm">
+                               Hand Off
+                             </button>
+                           </div>`
+                        : `<div class="flex items-center justify-end gap-2 text-right">
+                             ${delBtn}
+                             <div>
+                                <span class="text-xs font-medium text-gray-900 block">By: ${pkg.pickedUpBy}</span>
+                                <span class="text-xs text-gray-500 block">${delivStr}</span>
+                             </div>
+                           </div>`;
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 font-semibold text-gray-900">${pkg.residentName}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-500 shadow-inner"><i class="fa-solid ${icon} text-sm"></i></div>
+                                <div><div class="text-sm font-bold text-gray-900">${pkg.carrier}</div><div class="text-xs text-gray-500 font-medium">${pkg.type}</div></div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">${pkg.trackingNumber ? `<span class="font-mono text-xs font-bold bg-gray-100 px-2 py-1 rounded border border-gray-200 text-gray-700">${pkg.trackingNumber}</span>` : `<span class="text-gray-400 italic text-xs">N/A</span>`}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 font-medium">${receivedStr}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${statusHtml}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">${actionsHtml}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        };
+
+        window.filterTable = () => renderPackages();
+
+        function updateStats() {
+            const today = new Date().toDateString();
+            let total = 0, pending = 0, delivered = 0;
+
+            packagesData.forEach(p => {
+                if (p.receiveDate && new Date(p.receiveDate).toDateString() === today) total++;
+                if (p.status === 'pending') pending++;
+                if (p.status === 'delivered' && p.deliveredDate && new Date(p.deliveredDate).toDateString() === today) delivered++;
+            });
+
+            el('stat-total').textContent = total;
+            el('stat-pending').textContent = pending;
+            el('stat-delivered').textContent = delivered;
+        }
+
+        window.openLogModal = () => {
+            el('logPackageForm').reset();
+            
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            el('receiveDateDisplay').value = timeString; 
+            el('receiveDate').value = now.toISOString(); 
+            
+            el('logPackageModal').classList.remove('hidden');
+            setTimeout(() => el('logModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeLogModal = () => {
+            el('logModalContent').classList.add('scale-95');
+            setTimeout(() => el('logPackageModal').classList.add('hidden'), 200);
+        };
+
+        window.handleLogPackage = async (e) => {
+            e.preventDefault();
+            const btn = el('savePackageBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const pkg = {
+                residentName: el('residentName').value,
+                carrier: el('carrier').value,
+                type: el('packageType').value,
+                trackingNumber: el('trackingNumber').value.toUpperCase(),
+                receiveDate: el('receiveDate').value,
+                status: 'pending',
+                deliveredDate: null,
+                pickedUpBy: null,
+                loggedBy: currentUserInfo.name,
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                await addDoc(collection(db, 'system', appId, 'packages'), pkg);
+                showToast('Package securely logged!', 'success');
+                closeLogModal();
+            } catch (err) {
+                showToast("Failed to save record.", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
+        window.openDeliverModal = (id) => {
+            const pkg = packagesData.find(p => p.id === id);
+            if (!pkg) return;
+            el('deliveryPackageId').value = pkg.id;
+            el('deliveryResidentName').textContent = pkg.residentName;
+            el('deliveryCarrierType').innerHTML = `${pkg.carrier} - ${pkg.type} ${pkg.trackingNumber ? `(#${pkg.trackingNumber})` : ''}`;
+            el('pickedUpBy').value = '';
+            
+            el('deliverPackageModal').classList.remove('hidden');
+            setTimeout(() => el('deliverModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeDeliverModal = () => {
+            el('deliverModalContent').classList.add('scale-95');
+            setTimeout(() => el('deliverPackageModal').classList.add('hidden'), 200);
+        };
+
+        window.setPickedUpByResident = () => {
+            const id = el('deliveryPackageId').value;
+            const pkg = packagesData.find(p => p.id === id);
+            if (pkg) el('pickedUpBy').value = pkg.residentName.split(' - ')[0];
+        };
+
+        window.handleDeliverPackage = async (e) => {
+            e.preventDefault();
+            const btn = el('confirmDeliverBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const ref = doc(db, 'system', appId, 'packages', el('deliveryPackageId').value);
+                await updateDoc(ref, {
+                    status: 'delivered',
+                    pickedUpBy: el('pickedUpBy').value,
+                    deliveredDate: new Date().toISOString()
+                });
+                showToast('Delivery completed successfully.', 'success');
+                closeDeliverModal();
+            } catch (err) {
+                showToast("Failed to process handoff.", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
+        function subscribeToUsers() {
+            const usersRef = collection(db, 'system', appId, 'users');
+            unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
+                systemUsersData = [];
+                snapshot.forEach(doc => systemUsersData.push({ id: doc.id, ...doc.data() }));
+                renderUsersTable();
+            });
+        }
+
+        function renderUsersTable() {
+            const tbody = el('usersTableBody');
+            tbody.innerHTML = '';
+            
+            systemUsersData.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 bg-white border-b border-gray-100 last:border-0';
+                
+                let roleBadge = '';
+                if(user.role === 'admin') roleBadge = '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-bold border border-red-200">Manager (Admin)</span>';
+                else if(user.role === 'frontdesk') roleBadge = '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold border border-blue-200">Front Desk</span>';
+                else roleBadge = '<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-bold border border-amber-200">Receiving</span>';
+
+                const delBtn = user.id === currentUserInfo.id 
+                    ? `<span class="text-xs text-gray-400 italic">Current User</span>`
+                    : `<button onclick="openDeleteModal('${user.id}', 'user')" class="text-red-500 hover:bg-red-50 px-3 py-1 rounded transition-colors text-sm font-semibold border border-transparent hover:border-red-200">Revoke Access</button>`;
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-bold text-gray-900">${user.name}</td>
+                    <td class="px-6 py-4 font-mono text-sm text-gray-600">${user.username}</td>
+                    <td class="px-6 py-4">${roleBadge}</td>
+                    <td class="px-6 py-4 text-right">${delBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.openAddUserModal = () => {
+            el('addUserForm').reset();
+            el('addUserModal').classList.remove('hidden');
+            setTimeout(() => el('addUserContent').classList.remove('scale-95'), 10);
+        };
+        window.closeAddUserModal = () => {
+            el('addUserContent').classList.add('scale-95');
+            setTimeout(() => el('addUserModal').classList.add('hidden'), 200);
+        };
+
+        window.handleAddUser = async (e) => {
+            e.preventDefault();
+            const btn = el('saveUserBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = 'Saving...'; btn.disabled = true;
+            
+            const exists = systemUsersData.find(u => u.username.toLowerCase() === el('newUserUsername').value.toLowerCase());
+            if (exists) {
+                showToast("Username already taken.", "error");
+                btn.innerHTML = orig; btn.disabled = false;
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, 'system', appId, 'users'), {
+                    name: el('newUserName').value,
+                    username: el('newUserUsername').value,
+                    password: el('newUserPassword').value, 
+                    role: el('newUserRole').value,
+                    created: new Date().toISOString()
+                });
+                showToast("Staff account created.", "success");
+                closeAddUserModal();
+            } catch (err) {
+                showToast("Failed to create user.", "error");
+            } finally {
+                btn.innerHTML = orig; btn.disabled = false;
+            }
+        };
+
+        window.openDeleteModal = (id, type) => {
+            el('deleteTargetId').value = id;
+            el('deleteTargetType').value = type;
+            el('deletePackageModal').classList.remove('hidden');
+            setTimeout(() => el('deleteModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeDeleteModal = () => {
+            el('deleteModalContent').classList.add('scale-95');
+            setTimeout(() => el('deletePackageModal').classList.add('hidden'), 200);
+        };
+
+        window.confirmDeleteAction = async () => {
+            const id = el('deleteTargetId').value;
+            const type = el('deleteTargetType').value;
+            const collName = type === 'package' ? 'packages' : 'users';
+
+            try {
+                await deleteDoc(doc(db, 'system', appId, collName, id));
+                showToast(`${type === 'package' ? 'Package' : 'User'} deleted permanently.`, "success");
+                closeDeleteModal();
+            } catch (err) {
+                showToast("Deletion failed.", "error");
+            }
+        };
+
+        window.showToast = (msg, type = 'info') => {
+            const cont = el('toastContainer');
+            const t = document.createElement('div');
+            const style = type === 'success' ? 'bg-gray-900 border-gray-700 text-green-400' 
+                        : type === 'error' ? 'bg-red-900 border-red-700 text-red-200' 
+                        : 'bg-gray-800 border-gray-600 text-blue-400';
+            const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+
+            t.className = `${style} px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 toast-enter text-sm font-semibold border text-white`;
+            t.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> ${msg}`;
+            cont.appendChild(t);
+
+            requestAnimationFrame(() => { t.classList.remove('toast-enter'); t.classList.add('toast-enter-active'); });
+            setTimeout(() => {
+                t.classList.remove('toast-enter-active'); t.classList.add('toast-exit');
+                setTimeout(() => t.remove(), 300);
+            }, 3000);
+        };
+
+        window.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
