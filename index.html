@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Apollo Security - Receiving App</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-color: #f3f4f6;
+            --text-main: #1f2937;
+            --panel-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --input-bg: #ffffff;
+            --text-muted: #6b7280;
+            --hover-bg: #f9fafb;
+        }
+
+        html.dark-theme {
+            --bg-color: #0f172a; /* Slate 900 */
+            --text-main: #f8fafc; /* Slate 50 */
+            --panel-bg: #1e293b; /* Slate 800 */
+            --border-color: #334155; /* Slate 700 */
+            --input-bg: #0f172a; 
+            --text-muted: #94a3b8; /* Slate 400 */
+            --hover-bg: #334155;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .themed-panel { background-color: var(--panel-bg); border-color: var(--border-color); color: var(--text-main); }
+        .themed-input { background-color: var(--input-bg); border-color: var(--border-color); color: var(--text-main); }
+        .themed-text { color: var(--text-main); }
+        .themed-muted { color: var(--text-muted); }
+        .themed-border { border-color: var(--border-color); }
+        .themed-hover:hover { background-color: var(--hover-bg); }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        html.dark-theme .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+
+        @media screen and (max-width: 768px) {
+            input, select, textarea { font-size: 16px !important; } 
+            .glass-modal { border-radius: 1.5rem !important; } 
+        }
+
+        .toast-enter { transform: translateY(100%); opacity: 0; }
+        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .toast-exit { transform: translateX(100%); opacity: 0; transition: all 0.3s ease-in; }
+        
+        /* Barcode Scanner Overrides */
+        #packageBarcodeReader video, #dlBarcodeReader video { object-fit: cover !important; border-radius: 0.5rem; }
+        
+        /* Advanced Scanner Targeting UI */
+        .scanner-target-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid rgba(59, 130, 246, 0.6);
+            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .dl-target { width: 80%; height: 40%; border-radius: 8px; border-color: rgba(245, 158, 11, 0.8); }
+        .pkg-target { width: 70%; height: 50%; border-radius: 8px; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Global App Loading Overlay -->
+    <div id="globalLoading" class="fixed inset-0 bg-gray-950 z-[200] flex flex-col items-center justify-center">
+        <i class="fa-solid fa-cube text-white text-5xl mb-4 animate-bounce"></i>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Apollo Security</h2>
+        <p class="text-gray-400 mt-2 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-circle-notch fa-spin"></i> Connecting to Database...
+        </p>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center z-[100] hidden">
+        <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="bg-gray-800 border border-gray-700 text-white p-3 rounded-lg inline-block mb-3 shadow-md">
+                    <i class="fa-solid fa-cube text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-white tracking-tight">Apollo Security</h1>
+                <p class="text-gray-400 mt-2 text-sm font-medium uppercase tracking-wider">Receiving App</p>
+            </div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Username</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="text" id="loginUsername" required class="w-full pl-10 pr-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="password" id="loginPassword" required class="w-full pl-10 pr-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600">
+                    </div>
+                </div>
+                
+                <button type="submit" id="loginBtn" class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-bold transition duration-200 mt-6 shadow-lg">
+                    Sign In <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="w-64 themed-panel shadow-lg hidden md:flex flex-col h-full z-10 relative border-r themed-border">
+        <div class="p-6 border-b themed-border flex items-center gap-3">
+            <div class="bg-gray-900 text-white p-2 rounded-lg shadow-sm border border-gray-800">
+                <i class="fa-solid fa-cube text-xl"></i>
+            </div>
+            <h1 class="text-lg font-bold themed-text tracking-tight">Apollo Security</h1>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+            <button onclick="switchView('dashboard')" id="navDashboard" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-500/10 text-blue-600 rounded-lg font-medium transition-colors text-left">
+                <i class="fa-solid fa-box w-5 text-center"></i> Packages
+            </button>
+            
+            <button onclick="switchView('contractors')" id="navContractors" class="w-full flex items-center gap-3 px-4 py-3 themed-muted themed-hover rounded-lg font-medium transition-colors text-left">
+                <i class="fa-solid fa-hard-hat w-5 text-center"></i> Contractors
+            </button>
+
+            <button onclick="switchView('users')" id="navUsers" class="hidden w-full items-center gap-3 px-4 py-3 themed-muted themed-hover rounded-lg font-medium transition-colors text-left">
+                <i class="fa-solid fa-users-gear w-5 text-center"></i> Manage Users
+            </button>
+        </nav>
+        
+        <div class="p-4 border-t themed-border themed-panel">
+            <div class="flex items-center justify-between px-2 py-2">
+                <div class="flex items-center gap-3">
+                    <div id="userAvatar" class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border border-blue-200">U</div>
+                    <div>
+                        <p class="text-sm font-bold themed-text" id="userNameDisplay">Staff Member</p>
+                        <p class="text-xs text-blue-500 font-medium" id="userRoleDisplay">Active Shift</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button onclick="toggleTheme()" class="themed-muted hover:text-blue-500 transition-colors p-2 rounded-lg themed-hover" title="Toggle Theme">
+                        <i class="fa-solid fa-moon" id="desktopThemeIcon"></i>
+                    </button>
+                    <button onclick="logout()" class="themed-muted hover:text-red-500 transition-colors p-2 rounded-lg themed-hover" title="Logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+        
+        <!-- Mobile Header -->
+        <header class="md:hidden themed-panel shadow-sm border-b themed-border p-4 flex justify-between items-center z-10">
+            <div class="flex items-center gap-2">
+                <div class="bg-gray-900 text-white p-1.5 rounded-lg border border-gray-800">
+                    <i class="fa-solid fa-cube text-sm"></i>
+                </div>
+                <h1 class="text-base font-bold themed-text truncate">Apollo Security</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleTheme()" class="themed-muted hover:text-blue-500">
+                    <i class="fa-solid fa-moon text-xl" id="mobileThemeIcon"></i>
+                </button>
+                <button onclick="switchView('dashboard')" id="mobileNavDashboard" class="text-blue-500 flex flex-col items-center"><i class="fa-solid fa-box text-xl"></i><span class="text-[10px] mt-1 font-bold">Pkgs</span></button>
+                <button onclick="switchView('contractors')" id="mobileNavContractors" class="themed-muted flex flex-col items-center"><i class="fa-solid fa-hard-hat text-xl"></i><span class="text-[10px] mt-1 font-bold">Vndrs</span></button>
+                <button onclick="logout()" class="themed-muted hover:text-red-500 flex flex-col items-center ml-1">
+                    <i class="fa-solid fa-power-off text-xl"></i><span class="text-[10px] mt-1 font-bold">Exit</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEW: Package Dashboard -->
+        <div id="view-dashboard" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <!-- Page Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold themed-text">Packages</h2>
+                        <p class="text-sm themed-muted mt-1">Real-time synced inventory.</p>
+                    </div>
+                    <button onclick="openLogModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm focus:ring-4 focus:ring-blue-500/30">
+                        <i class="fa-solid fa-plus"></i> Log New Package
+                    </button>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl border border-blue-500/20"><i class="fa-solid fa-cubes"></i></div>
+                        <div>
+                            <p class="text-sm font-medium themed-muted">Total Today</p>
+                            <p class="text-2xl font-bold themed-text" id="stat-total">0</p>
+                        </div>
+                    </div>
+                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl border border-amber-500/20"><i class="fa-solid fa-clock"></i></div>
+                        <div>
+                            <p class="text-sm font-medium themed-muted">Awaiting Pickup</p>
+                            <p class="text-2xl font-bold themed-text" id="stat-pending">0</p>
+                        </div>
+                    </div>
+                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center text-xl border border-green-500/20"><i class="fa-solid fa-check-double"></i></div>
+                        <div>
+                            <p class="text-sm font-medium themed-muted">Delivered Today</p>
+                            <p class="text-2xl font-bold themed-text" id="stat-delivered">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Package List Table -->
+                <div class="themed-panel rounded-xl shadow-sm border themed-border overflow-hidden flex flex-col relative min-h-[400px]">
+                    <div class="p-5 border-b themed-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-black/5">
+                        <h3 class="text-lg font-semibold themed-text">Inventory Logs</h3>
+                        
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" id="searchInput" placeholder="Search resident or tracking..." onkeyup="filterTable()" class="themed-input w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <i class="fa-solid fa-search absolute left-3 top-2.5 themed-muted"></i>
+                            </div>
+                            <select id="filterStatus" onchange="filterTable()" class="themed-input border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="all">All Status</option>
+                                <option value="pending">Awaiting Pickup</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto custom-scrollbar flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-black/5 themed-muted text-xs uppercase tracking-wider border-b themed-border">
+                                    <th class="px-6 py-4 font-semibold">Resident</th>
+                                    <th class="px-6 py-4 font-semibold">Carrier & Type</th>
+                                    <th class="px-6 py-4 font-semibold">Tracking #</th>
+                                    <th class="px-6 py-4 font-semibold">Received</th>
+                                    <th class="px-6 py-4 font-semibold">Status</th>
+                                    <th class="px-6 py-4 font-semibold">Staff</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="packageTableBody" class="divide-y themed-border text-sm">
+                                <!-- Package rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="tableLoading" class="absolute inset-0 themed-panel/80 backdrop-blur-sm flex items-center justify-center z-10 hidden">
+                        <div class="text-blue-500 flex flex-col items-center themed-panel p-6 rounded-xl shadow-lg border border-blue-500/20">
+                            <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i>
+                            <span class="font-semibold mt-2 themed-text">Syncing Database...</span>
+                        </div>
+                    </div>
+
+                    <div id="emptyState" class="hidden absolute inset-0 flex-col items-center justify-center themed-panel z-0">
+                        <div class="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center themed-muted mb-4 border themed-border">
+                            <i class="fa-solid fa-box-open text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold themed-text mb-1">No packages found</h4>
+                        <p class="themed-muted text-sm max-w-sm text-center mb-6">There are currently no packages matching your criteria.</p>
+                        <button onclick="openLogModal()" class="themed-input border themed-text px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/5 transition-colors shadow-sm">
+                            Log a package
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Contractor Dashboard -->
+        <div id="view-contractors" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <!-- Page Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold themed-text">Contractor Log</h2>
+                        <p class="text-sm themed-muted mt-1">Manage vendor and contractor access.</p>
+                    </div>
+                    <button onclick="openContractorModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm focus:ring-4 focus:ring-amber-500/30">
+                        <i class="fa-solid fa-user-plus"></i> Log Contractor
+                    </button>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl border border-amber-500/20"><i class="fa-solid fa-hard-hat"></i></div>
+                        <div>
+                            <p class="text-sm font-medium themed-muted">Active On-Site Today</p>
+                            <p class="text-2xl font-bold themed-text" id="stat-active-contractors">0</p>
+                        </div>
+                    </div>
+                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-black/5 themed-muted flex items-center justify-center text-xl border themed-border"><i class="fa-solid fa-door-open"></i></div>
+                        <div>
+                            <p class="text-sm font-medium themed-muted">Total Visits Today</p>
+                            <p class="text-2xl font-bold themed-text" id="stat-total-contractors">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contractor List Table -->
+                <div class="themed-panel rounded-xl shadow-sm border themed-border overflow-hidden flex flex-col relative min-h-[400px]">
+                    <div class="p-5 border-b themed-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-black/5">
+                        <h3 class="text-lg font-semibold themed-text">Access Logs</h3>
+                        
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" id="searchContractorInput" placeholder="Search name or company..." onkeyup="filterContractors()" class="themed-input w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+                                <i class="fa-solid fa-search absolute left-3 top-2.5 themed-muted"></i>
+                            </div>
+                            <select id="filterContractorStatus" onchange="filterContractors()" class="themed-input border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="all">All Status</option>
+                                <option value="active">On-Site</option>
+                                <option value="checked-out">Checked Out</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto custom-scrollbar flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-black/5 themed-muted text-xs uppercase tracking-wider border-b themed-border">
+                                    <th class="px-6 py-4 font-semibold">Contractor</th>
+                                    <th class="px-6 py-4 font-semibold">Service & Company</th>
+                                    <th class="px-6 py-4 font-semibold">Unit / Resident</th>
+                                    <th class="px-6 py-4 font-semibold">Time In</th>
+                                    <th class="px-6 py-4 font-semibold">Status</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contractorTableBody" class="divide-y themed-border text-sm">
+                                <!-- Contractor rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="contractorEmptyState" class="hidden absolute inset-0 flex-col items-center justify-center themed-panel z-0">
+                        <div class="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center themed-muted mb-4 border themed-border shadow-sm"><i class="fa-solid fa-clipboard-user text-3xl"></i></div>
+                        <h4 class="text-lg font-semibold themed-text mb-1">No contractors found</h4>
+                        <p class="themed-muted text-sm max-w-sm text-center mb-6">There are currently no active contractors matching your criteria.</p>
+                        <button onclick="openContractorModal()" class="themed-input border themed-text px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/5 transition-colors shadow-sm">
+                            Log a contractor
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Manage Users (Admin Only) -->
+        <div id="view-users" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative">
+            <div class="max-w-5xl mx-auto space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold themed-text">User Management</h2>
+                        <p class="text-sm themed-muted mt-1">Create and remove staff login credentials.</p>
+                    </div>
+                    <button onclick="openAddUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-user-plus"></i> Add New Staff
+                    </button>
+                </div>
+
+                <div class="themed-panel rounded-xl shadow-sm border themed-border overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-black/5 themed-muted text-xs uppercase tracking-wider border-b themed-border">
+                                    <th class="px-6 py-4 font-semibold">Staff Name</th>
+                                    <th class="px-6 py-4 font-semibold">Username</th>
+                                    <th class="px-6 py-4 font-semibold">Role/Position</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody" class="divide-y themed-border text-sm">
+                                <!-- User rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Log New Package -->
+    <div id="logPackageModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="themed-panel w-full max-w-lg rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar transform scale-95 transition-transform duration-200" id="logModalContent">
+            
+            <div class="flex justify-between items-center p-6 border-b themed-border sticky top-0 themed-panel z-10">
+                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
+                    <i class="fa-solid fa-box text-blue-500"></i> Log Incoming Package
+                </h3>
+                <button onclick="closeLogModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form id="logPackageForm" onsubmit="handleLogPackage(event)">
+                    <div class="space-y-5">
+                        
+                        <!-- Advanced Continuous Scanner Viewport -->
+                        <div id="packageScannerContainer" class="hidden w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-inner border border-gray-600">
+                            <!-- Scanner target div for html5-qrcode -->
+                            <div id="packageBarcodeReader" class="w-full h-full"></div>
+                            
+                            <!-- Visual Box Guide -->
+                            <div class="scanner-target-box pkg-target"></div>
+                            
+                            <!-- Feedback Overlay -->
+                            <div class="absolute top-4 left-0 right-0 flex justify-center z-20 px-4">
+                                <div id="pkgScanFeedback" class="bg-gray-900/80 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-gray-700 transition-all text-center">
+                                    <i class="fa-solid fa-camera animate-pulse mr-1"></i> Scan Tracking Barcode...
+                                </div>
+                            </div>
+                            
+                            <!-- Controls -->
+                            <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-20">
+                                <button type="button" onclick="stopPackageScanner()" class="bg-red-600/90 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-red-500 transition-colors"><i class="fa-solid fa-times"></i></button>
+                                <button type="button" id="btnPkgFlashlight" class="hidden bg-gray-800/90 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-700 transition-colors"><i class="fa-solid fa-bolt"></i></button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold themed-text mb-1">Resident Name / Unit <span class="text-red-500">*</span></label>
+                            <input type="text" id="residentName" required placeholder="e.g. Jane Doe - Apt 4B" class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-shadow">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold themed-text mb-1">Carrier <span class="text-red-500">*</span></label>
+                                <select id="carrier" required class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="UPS">UPS</option>
+                                    <option value="FedEx">FedEx</option>
+                                    <option value="USPS">USPS</option>
+                                    <option value="Amazon">Amazon</option>
+                                    <option value="DHL">DHL</option>
+                                    <option value="Local Courier">Local Courier</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold themed-text mb-1">Package Type <span class="text-red-500">*</span></label>
+                                <select id="packageType" required class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Box">Box</option>
+                                    <option value="Envelope">Envelope</option>
+                                    <option value="Package">Standard Package</option>
+                                    <option value="Dry Cleaning">Dry Cleaning</option>
+                                    <option value="Medicine">Medicine</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
+                                <span>Tracking Number</span>
+                                <!-- Start Advanced Continuous Scanner Button -->
+                                <button type="button" onclick="startAdvancedPackageScanner()" class="text-blue-500 hover:text-blue-400 bg-blue-500/10 px-2 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1 border border-blue-500/20 shadow-sm">
+                                    <i class="fa-solid fa-barcode"></i> Auto-Scan
+                                </button>
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="trackingNumber" placeholder="Scan or type tracking #" class="themed-input w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm uppercase">
+                                <i class="fa-solid fa-barcode absolute left-3 top-3.5 themed-muted"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-500/5 p-4 rounded-lg border border-blue-500/10 mt-2">
+                             <label class="block text-sm font-bold themed-text mb-1"><i class="fa-solid fa-clock text-blue-500 mr-1"></i> Received Timestamp</label>
+                             <p class="text-xs themed-muted mb-2">Time is automatically captured to ensure accurate logging.</p>
+                             <input type="text" id="receiveDateDisplay" disabled class="themed-input w-full px-4 py-2 border rounded-lg text-sm cursor-not-allowed opacity-70">
+                             <input type="hidden" id="receiveDate">
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t themed-border">
+                        <button type="button" onclick="closeLogModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors border themed-border themed-input">
+                            Cancel
+                        </button>
+                        <button type="submit" id="savePackageBtn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i> Save Record
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Log New Contractor -->
+    <div id="logContractorModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="themed-panel w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200 flex flex-col max-h-[90vh]" id="logContractorContent">
+            
+            <div class="flex justify-between items-center p-6 border-b themed-border shrink-0">
+                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-amber-500"></i> Register Contractor
+                </h3>
+                <button onclick="closeContractorModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <form id="logContractorForm" onsubmit="handleLogContractor(event)">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        
+                        <!-- Left Column: Form Details -->
+                        <div class="flex-1 space-y-4">
+                            
+                            <!-- Enhanced DL Scanner Viewport -->
+                            <div id="dlScannerContainer" class="hidden w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-inner border border-gray-600 mb-4">
+                                <div id="dlBarcodeReader" class="w-full h-full"></div>
+                                
+                                <!-- Visual Guide Box for PDF417 -->
+                                <div class="scanner-target-box dl-target"></div>
+                                
+                                <!-- Feedback Overlay -->
+                                <div class="absolute top-4 left-0 right-0 flex justify-center z-20 px-4">
+                                    <div id="dlScanFeedback" class="bg-gray-900/80 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-gray-700 transition-all text-center max-w-xs">
+                                        Align barcode on back of ID...
+                                    </div>
+                                </div>
+                                
+                                <div class="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-10 px-2">
+                                    <button type="button" onclick="stopDLScanner()" class="bg-red-600/90 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-red-500 transition-colors"><i class="fa-solid fa-times"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="border-b themed-border pb-4">
+                                <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
+                                    <span>Contractor Full Name <span class="text-red-500">*</span></span>
+                                    <button type="button" onclick="startDLScanner()" class="text-amber-500 hover:text-amber-400 bg-amber-500/10 px-2 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1 border border-amber-500/20 shadow-sm">
+                                        <i class="fa-solid fa-id-card"></i> Scan DL (Back)
+                                    </button>
+                                </label>
+                                <input type="text" id="contractorName" required placeholder="e.g. John Doe" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold themed-text mb-1">Unit Number <span class="text-red-500">*</span></label>
+                                    <input type="text" id="contractorUnit" required placeholder="e.g. 4B" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold themed-text mb-1">Resident Name</label>
+                                    <input type="text" id="contractorResident" placeholder="Optional" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold themed-text mb-1">Company</label>
+                                    <input type="text" id="contractorCompany" placeholder="e.g. Bob's Plumbing" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold themed-text mb-1">Cell Phone</label>
+                                    <input type="tel" id="contractorPhone" placeholder="(555) 555-5555" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold themed-text mb-1">Service Type <span class="text-red-500">*</span></label>
+                                <select id="contractorServiceType" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Plumbing">Plumbing</option>
+                                    <option value="AC / HVAC">AC / HVAC</option>
+                                    <option value="Painting">Painting</option>
+                                    <option value="Cleaning">Cleaning</option>
+                                    <option value="Electrical">Electrical</option>
+                                    <option value="Construction">Construction</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Camera & Badge -->
+                        <div class="w-full md:w-64 flex flex-col space-y-4">
+                            <label class="block text-sm font-semibold themed-text text-center">Contractor Photo</label>
+                            
+                            <!-- Circular Front-Facing Camera Viewfinder -->
+                            <div id="cameraContainer" class="w-40 h-40 mx-auto bg-black rounded-full overflow-hidden relative flex items-center justify-center border-4 border-gray-600 shadow-md">
+                                <video id="cameraVideo" class="absolute inset-0 w-full h-full object-cover hidden" autoplay playsinline></video>
+                                <img id="capturedPhoto" class="absolute inset-0 w-full h-full object-cover hidden" />
+                                
+                                <div id="cameraPrompt" class="text-center p-4">
+                                    <i class="fa-solid fa-camera text-3xl text-gray-400 mb-1"></i>
+                                    <button type="button" onclick="startCamera(event)" class="mt-1 text-[10px] uppercase font-bold bg-white text-gray-900 px-2 py-1 rounded shadow-sm hover:bg-gray-200">Enable</button>
+                                </div>
+                            </div>
+
+                            <!-- Camera Controls -->
+                            <div class="flex gap-2">
+                                <button type="button" id="btnCapture" onclick="capturePhoto(event)" disabled class="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-sm py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
+                                    <i class="fa-solid fa-camera"></i> Capture
+                                </button>
+                                <button type="button" id="btnRetake" onclick="startCamera(event)" class="hidden flex-1 bg-gray-600 hover:bg-gray-500 text-white text-sm py-2 rounded font-medium transition-colors">
+                                    Retake
+                                </button>
+                            </div>
+
+                            <!-- DYMO Label Print -->
+                            <div class="mt-auto pt-4 border-t themed-border">
+                                <button type="button" onclick="printDymoLabel()" id="btnDymo" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-print"></i> Print Badge
+                                </button>
+                                <p class="text-[10px] themed-muted text-center mt-1">Requires DYMO Web Service</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t themed-border">
+                        <button type="button" onclick="closeContractorModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors border themed-border themed-input">
+                            Cancel
+                        </button>
+                        <button type="submit" id="saveContractorBtn" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i> Grant Access
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Deliver Package -->
+    <div id="deliverPackageModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="themed-panel w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="deliverModalContent">
+            <div class="flex justify-between items-center p-6 border-b themed-border">
+                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
+                    <i class="fa-solid fa-people-carry-box text-green-500"></i> Hand Off Package
+                </h3>
+                <button onclick="closeDeliverModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form onsubmit="handleDeliverPackage(event)">
+                    <input type="hidden" id="deliveryPackageId">
+                    
+                    <div class="bg-black/5 p-4 rounded-xl mb-6 border themed-border text-center">
+                        <p class="text-sm themed-muted mb-1">Releasing package for:</p>
+                        <p class="text-xl font-bold themed-text" id="deliveryResidentName">Resident Name</p>
+                        <p class="text-sm font-medium text-blue-500 mt-1" id="deliveryCarrierType">Carrier Info</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
+                            <span>Picked Up By <span class="text-red-500">*</span></span>
+                            <button type="button" onclick="setPickedUpByResident()" class="text-blue-500 text-xs font-bold hover:underline">
+                                Set to Resident Name
+                            </button>
+                        </label>
+                        <input type="text" id="pickedUpBy" required placeholder="Name of person picking up" class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 transition-shadow">
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t themed-border">
+                        <button type="button" onclick="closeDeliverModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors border themed-border themed-input">
+                            Cancel
+                        </button>
+                        <button type="submit" id="confirmDeliverBtn" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-check-double"></i> Complete Hand Off
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Checkout Contractor -->
+    <div id="checkoutContractorModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="themed-panel w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="checkoutModalContent">
+            <div class="flex justify-between items-center p-6 border-b themed-border">
+                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
+                    <i class="fa-solid fa-door-open text-amber-600"></i> Checkout Contractor
+                </h3>
+                <button onclick="closeCheckoutModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 text-center">
+                <input type="hidden" id="checkoutContractorId">
+                <div class="mb-4">
+                    <img id="checkoutPhoto" class="w-20 h-20 object-cover rounded-full mx-auto border-4 border-black/10 bg-black/5 mb-3 hidden shadow-md">
+                    <div id="checkoutNoPhoto" class="w-20 h-20 rounded-full mx-auto bg-black/5 flex items-center justify-center themed-muted text-3xl mb-3 border-4 border-black/10 shadow-inner">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <p class="font-bold text-xl themed-text" id="checkoutName">John Doe</p>
+                    <p class="text-sm themed-muted" id="checkoutCompany">Company</p>
+                </div>
+                
+                <p class="text-sm themed-muted mb-6">Are you sure you want to log this contractor out? This will record their departure time.</p>
+
+                <div class="flex gap-3">
+                    <button onclick="closeCheckoutModal()" class="flex-1 px-4 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors border themed-border themed-input">
+                        Cancel
+                    </button>
+                    <button onclick="confirmCheckout()" id="btnConfirmCheckout" class="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-md transition-colors">
+                        Confirm Checkout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add New User (Admin) -->
+    <div id="addUserModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="themed-panel w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="addUserContent">
+            <div class="flex justify-between items-center p-6 border-b themed-border">
+                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-blue-500"></i> Create Staff Login
+                </h3>
+                <button onclick="closeAddUserModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form id="addUserForm" onsubmit="handleAddUser(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold themed-text mb-1">Staff Full Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserName" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g. Sarah Smith">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold themed-text mb-1">Login Username <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserUsername" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g. ssmith">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold themed-text mb-1">Temporary Password <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserPassword" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Assign a password">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold themed-text mb-1">Role / Department <span class="text-red-500">*</span></label>
+                        <select id="newUserRole" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="frontdesk">Front Desk (Standard)</option>
+                            <option value="receiving">Receiving (Standard)</option>
+                            <option value="admin">Manager (Admin)</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t themed-border">
+                        <button type="button" onclick="closeAddUserModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg border themed-border">Cancel</button>
+                        <button type="submit" id="saveUserBtn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm">
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Delete Confirmation (Admin Only) -->
+    <div id="deletePackageModal" class="fixed inset-0 bg-red-900/40 backdrop-blur-sm hidden z-[60] flex items-center justify-center p-4">
+        <div class="themed-panel w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden p-6 text-center transform scale-95 transition-transform duration-200 border border-red-500/20" id="deleteModalContent">
+            <div class="mx-auto w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center text-2xl mb-4 border border-red-500/20 shadow-inner">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-xl font-bold themed-text mb-2">Delete Record?</h3>
+            <p class="text-sm themed-muted mb-6">This action cannot be undone. It will permanently remove this item from the database.</p>
+            
+            <input type="hidden" id="deleteTargetId">
+            <input type="hidden" id="deleteTargetType">
+            
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeDeleteModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors w-full border themed-border themed-input">
+                    Cancel
+                </button>
+                <button onclick="confirmDeleteAction()" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm transition-colors w-full flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal for Enlaging Contractor Photos -->
+    <div id="imageLightboxModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4 transition-opacity duration-300" onclick="closeImageModal()">
+        <div class="relative max-w-2xl w-full flex justify-center items-center flex-col" onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()" class="absolute -top-12 right-0 text-gray-400 hover:text-white transition-colors bg-gray-900/50 rounded-full w-10 h-10 flex items-center justify-center border border-gray-700">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+            <img id="lightboxImage" src="" class="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-gray-700">
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-[200] flex flex-col gap-2"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, getDocs, getDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Setup
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUhBrBkG8SSPvsv9e7BwnApate8jI1WVA",
+            authDomain: "buildingpackagetracker.firebaseapp.com",
+            projectId: "buildingpackagetracker",
+            storageBucket: "buildingpackagetracker.firebasestorage.app",
+            messagingSenderId: "571289687247",
+            appId: "1:571289687247:web:208fb17f010ee1b15cd3ba"
+        };
+        const appId = 'my-building-tracker-v1'; 
+        let app, db, auth;
+        let currentUserInfo = null; 
+        
+        // Data States
+        let packagesData = []; let systemUsersData = []; let contractorsData = []; 
+        let unsubscribePackages = null; let unsubscribeUsers = null;
+        
+        // Camera/Scanner States
+        let html5QrCode_Package = null; let isPkgScanning = false; let pkgScanDebounce = false;
+        let html5QrCode_DL = null; let isDLScanning = false;
+        let contractorVideoStream = null; let capturedImageBase64 = null; 
+
+        const el = (id) => document.getElementById(id);
+
+        async function initApp() {
+            // Apply Theme
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark-theme');
+                if(el('desktopThemeIcon')) el('desktopThemeIcon').className = 'fa-solid fa-sun';
+                if(el('mobileThemeIcon')) el('mobileThemeIcon').className = 'fa-solid fa-sun text-xl';
+            }
+
+            try {
+                if(!firebaseConfig.apiKey) throw new Error("Missing Config");
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                await signInAnonymously(auth);
+                await bootstrapSystem();
+                
+                const savedUserId = localStorage.getItem('parcelLogUser');
+                if (savedUserId) {
+                    const userSnap = await getDoc(doc(db, 'system', appId, 'users', savedUserId));
+                    if (userSnap.exists()) {
+                        currentUserInfo = { id: userSnap.id, ...userSnap.data() };
+                        setupUserSession(); el('globalLoading').classList.add('hidden'); return; 
+                    } else localStorage.removeItem('parcelLogUser');
+                }
+                el('globalLoading').classList.add('hidden');
+                el('loginScreen').classList.remove('hidden');
+            } catch (error) {
+                el('globalLoading').innerHTML = `<div class="text-center p-6"><h2 class='text-red-500 font-bold text-xl'>Connection Error</h2><p class="text-gray-400 mt-2">Failed to connect database.</p></div>`;
+            }
+        }
+
+        async function bootstrapSystem() {
+            const usersRef = collection(db, 'system', appId, 'users');
+            const usersSnap = await getDocs(usersRef); 
+            if (usersSnap.empty) await addDoc(usersRef, { name: "System Admin", username: "admin", password: "password", role: "admin", created: new Date().toISOString() });
+        }
+
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const u = el('loginUsername').value.trim(); const p = el('loginPassword').value.trim();
+            const btn = el('loginBtn'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...'; btn.disabled = true;
+
+            try {
+                const usersSnap = await getDocs(collection(db, 'system', appId, 'users'));
+                let foundUser = null;
+                usersSnap.forEach(doc => { const data = doc.data(); if (data.username === u && data.password === p) foundUser = { id: doc.id, ...data }; });
+
+                if (foundUser) {
+                    currentUserInfo = foundUser; localStorage.setItem('parcelLogUser', foundUser.id);
+                    setupUserSession(); el('loginScreen').classList.add('hidden'); el('loginForm').reset();
+                    showToast(`Welcome back, ${foundUser.name}!`, "success");
+                } else showToast("Invalid username or password.", "error");
+            } catch (err) { showToast("System error.", "error"); } finally { btn.innerHTML = 'Sign In <i class="fa-solid fa-arrow-right"></i>'; btn.disabled = false; }
+        };
+
+        function setupUserSession() {
+            el('userNameDisplay').textContent = currentUserInfo.name;
+            let displayRole = "Staff"; let color = "bg-blue-500/10 text-blue-500 border-blue-500/30";
+            if (currentUserInfo.role === 'admin') { displayRole = "Manager / Admin"; color = "bg-red-500/10 text-red-500 border-red-500/30"; el('navUsers').classList.remove('hidden'); el('navUsers').classList.add('flex'); } 
+            else { if(currentUserInfo.role === 'frontdesk') displayRole = "Front Desk"; if(currentUserInfo.role === 'receiving') displayRole = "Receiving"; el('navUsers').classList.add('hidden'); el('navUsers').classList.remove('flex'); }
+            el('userRoleDisplay').textContent = displayRole;
+            el('userAvatar').className = `w-9 h-9 rounded-full flex items-center justify-center font-bold border ${color}`;
+            el('userAvatar').textContent = currentUserInfo.name.charAt(0).toUpperCase();
+
+            subscribeToPackages(); subscribeToContractors(); 
+            if (currentUserInfo.role === 'admin') subscribeToUsers();
+            switchView('dashboard');
+        }
+
+        window.logout = () => {
+            if (unsubscribePackages) unsubscribePackages(); if (unsubscribeUsers) unsubscribeUsers(); if (window.unsubscribeContractors) window.unsubscribeContractors(); 
+            stopCamera(); stopPackageScanner(); stopDLScanner();
+            currentUserInfo = null; localStorage.removeItem('parcelLogUser'); 
+            el('loginScreen').classList.remove('hidden'); el('view-dashboard').classList.add('hidden'); el('view-contractors').classList.add('hidden'); el('view-users').classList.add('hidden');
+        };
+
+        window.toggleTheme = () => {
+            const isDark = document.documentElement.classList.toggle('dark-theme');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            if(el('desktopThemeIcon')) el('desktopThemeIcon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            if(el('mobileThemeIcon')) el('mobileThemeIcon').className = isDark ? 'fa-solid fa-sun text-xl' : 'fa-solid fa-moon text-xl';
+        };
+
+        window.switchView = (v) => {
+            const inact = 'w-full flex items-center gap-3 px-4 py-3 themed-muted themed-hover rounded-lg font-medium transition-colors text-left';
+            el('navDashboard').className = inact; el('navContractors').className = inact; if(currentUserInfo?.role === 'admin') el('navUsers').className = inact;
+            el('mobileNavDashboard').className = 'themed-muted flex flex-col items-center'; el('mobileNavContractors').className = 'themed-muted flex flex-col items-center';
+            el('view-dashboard').classList.add('hidden'); el('view-contractors').classList.add('hidden'); el('view-users').classList.add('hidden');
+
+            if (v === 'dashboard') { el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 bg-blue-500/10 text-blue-500 rounded-lg font-medium border border-blue-500/10 text-left'; el('mobileNavDashboard').className = 'text-blue-500 flex flex-col items-center'; el('view-dashboard').classList.remove('hidden'); }
+            else if (v === 'contractors') { el('navContractors').className = 'w-full flex items-center gap-3 px-4 py-3 bg-amber-500/10 text-amber-600 rounded-lg font-medium border border-amber-500/10 text-left'; el('mobileNavContractors').className = 'text-amber-500 flex flex-col items-center'; el('view-contractors').classList.remove('hidden'); }
+            else if (v === 'users' && currentUserInfo?.role === 'admin') { el('navUsers').className = 'w-full flex items-center gap-3 px-4 py-3 bg-blue-500/10 text-blue-500 rounded-lg font-medium border border-blue-500/10 text-left'; el('view-users').classList.remove('hidden'); }
+        };
+
+        function subscribeToPackages() {
+            el('tableLoading').classList.remove('hidden');
+            unsubscribePackages = onSnapshot(collection(db, 'system', appId, 'packages'), (snap) => {
+                packagesData = []; snap.forEach((doc) => packagesData.push({ id: doc.id, ...doc.data() })); renderPackages(); el('tableLoading').classList.add('hidden');
+            });
+        }
+
+        window.renderPackages = () => {
+            const tbody = el('packageTableBody'); const term = el('searchInput').value.toLowerCase(); const statFilter = el('filterStatus').value;
+            tbody.innerHTML = '';
+            let filtered = packagesData.filter(p => {
+                return ((p.residentName||"").toLowerCase().includes(term) || (p.trackingNumber||"").toLowerCase().includes(term)) && (statFilter === 'all' || p.status === statFilter);
+            }).sort((a, b) => { if (a.status !== b.status) return a.status === 'pending' ? -1 : 1; return new Date(b.receiveDate || 0) - new Date(a.receiveDate || 0); });
+            updateStats();
+
+            if (filtered.length === 0) { tbody.parentElement.parentElement.classList.add('hidden'); el('emptyState').classList.remove('hidden'); el('emptyState').classList.add('flex'); } 
+            else {
+                tbody.parentElement.parentElement.classList.remove('hidden'); el('emptyState').classList.add('hidden'); el('emptyState').classList.remove('flex');
+                filtered.forEach(p => {
+                    const tr = document.createElement('tr'); tr.className = 'themed-hover transition-colors border-b themed-border themed-panel';
+                    let sHtml = p.status === 'pending' ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20"><span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> Awaiting Pickup</span>` : `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-600 border border-green-500/20"><i class="fa-solid fa-check mr-1"></i> Delivered</span>`;
+                    let icon = p.type === 'Envelope' ? 'fa-envelope' : p.type === 'Dry Cleaning' ? 'fa-shirt' : p.type === 'Medicine' ? 'fa-briefcase-medical' : 'fa-box';
+                    const recStr = new Date(p.receiveDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const delStr = p.deliveredDate ? new Date(p.deliveredDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                    const stfHtml = `<div class="text-xs themed-muted"><span class="block"><b class="themed-text">In:</b> ${p.loggedBy || 'Sys'}</span>${p.status === 'delivered' ? `<span class="block mt-1"><b class="themed-text">Out:</b> ${p.deliveredBy}</span>` : ''}</div>`;
+                    const delBtn = currentUserInfo?.role === 'admin' ? `<button onclick="openDeleteModal('${p.id}', 'package')" class="themed-muted hover:text-red-500 transition-colors p-2 rounded hover:bg-black/5"><i class="fa-solid fa-trash"></i></button>` : '';
+                    let actHtml = p.status === 'pending' ? `<div class="flex items-center justify-end gap-2">${delBtn}<button onclick="openDeliverModal('${p.id}')" class="themed-input border themed-text hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/30 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">Hand Off</button></div>` : `<div class="flex items-center justify-end gap-2 text-right">${delBtn}<div><span class="text-xs font-medium themed-text block">To: ${p.pickedUpBy}</span><span class="text-xs themed-muted block">${delStr}</span></div></div>`;
+                    tr.innerHTML = `<td class="px-6 py-4 font-semibold themed-text">${p.residentName}</td><td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-black/5 flex items-center justify-center themed-muted shadow-inner border themed-border"><i class="fa-solid ${icon} text-sm"></i></div><div><div class="text-sm font-bold themed-text">${p.carrier}</div><div class="text-xs themed-muted font-medium">${p.type}</div></div></div></td><td class="px-6 py-4">${p.trackingNumber ? `<span class="font-mono text-xs font-bold bg-black/5 px-2 py-1 rounded border themed-border themed-text">${p.trackingNumber}</span>` : `<span class="themed-muted italic text-xs">N/A</span>`}</td><td class="px-6 py-4 text-sm themed-muted font-medium">${recStr}</td><td class="px-6 py-4 whitespace-nowrap">${sHtml}</td><td class="px-6 py-4 whitespace-nowrap">${stfHtml}</td><td class="px-6 py-4 whitespace-nowrap text-right">${actHtml}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+        };
+        window.filterTable = () => renderPackages();
+
+        function updateStats() {
+            const today = new Date().toDateString(); let t = 0, p = 0, d = 0;
+            packagesData.forEach(x => { if (x.receiveDate && new Date(x.receiveDate).toDateString() === today) t++; if (x.status === 'pending') p++; if (x.status === 'delivered' && x.deliveredDate && new Date(x.deliveredDate).toDateString() === today) d++; });
+            el('stat-total').textContent = t; el('stat-pending').textContent = p; el('stat-delivered').textContent = d;
+        }
+
+        window.subscribeToContractors = () => {
+            window.unsubscribeContractors = onSnapshot(collection(db, 'system', appId, 'contractors'), (snap) => {
+                contractorsData = []; snap.forEach(doc => contractorsData.push({ id: doc.id, ...doc.data() })); renderContractors();
+            });
+        };
+
+        window.renderContractors = () => {
+            const tbody = el('contractorTableBody'); const term = el('searchContractorInput').value.toLowerCase(); const stat = el('filterContractorStatus').value;
+            tbody.innerHTML = '';
+            let filtered = contractorsData.filter(c => ((c.name||"").toLowerCase().includes(term) || (c.company||"").toLowerCase().includes(term)) && (stat === 'all' || c.status === stat))
+                .sort((a, b) => { if (a.status !== b.status) return a.status === 'active' ? -1 : 1; return new Date(b.timeIn || 0) - new Date(a.timeIn || 0); });
+
+            const today = new Date().toDateString(); let a = 0, t = 0;
+            contractorsData.forEach(c => { if (c.timeIn && new Date(c.timeIn).toDateString() === today) { t++; if (c.status === 'active') a++; } });
+            el('stat-active-contractors').textContent = a; el('stat-total-contractors').textContent = t;
+
+            if (filtered.length === 0) { tbody.parentElement.parentElement.classList.add('hidden'); el('contractorEmptyState').classList.remove('hidden'); el('contractorEmptyState').classList.add('flex'); } 
+            else {
+                tbody.parentElement.parentElement.classList.remove('hidden'); el('contractorEmptyState').classList.add('hidden'); el('contractorEmptyState').classList.remove('flex');
+                filtered.forEach(c => {
+                    const tr = document.createElement('tr'); tr.className = 'themed-hover border-b themed-border themed-panel';
+                    const tInStr = new Date(c.timeIn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    let sHtml = c.status === 'active' ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20"><span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> On-Site</span>` : `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-black/5 themed-muted border themed-border">Checked Out</span>`;
+                    let imgHtml = c.photoData ? `<img src="${c.photoData}" onclick="openImageModal('${c.photoData}')" class="w-8 h-8 rounded-full object-cover border themed-border cursor-pointer hover:opacity-75" />` : `<div class="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center themed-muted border themed-border"><i class="fa-solid fa-user text-xs"></i></div>`;
+                    let actHtml = c.status === 'active' ? `<button onclick="openCheckoutModal('${c.id}')" class="themed-input border themed-text hover:bg-black/5 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">Checkout <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i></button>` : `<span class="text-xs themed-muted">Out: ${new Date(c.timeOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+                    const delBtn = currentUserInfo?.role === 'admin' ? `<button onclick="openDeleteModal('${c.id}', 'contractor')" class="themed-muted hover:text-red-500 p-1.5 ml-2"><i class="fa-solid fa-trash text-xs"></i></button>` : '';
+                    tr.innerHTML = `<td class="px-6 py-3"><div class="flex items-center gap-3">${imgHtml}<div><div class="font-semibold themed-text">${c.name}</div><div class="text-xs themed-muted">${c.phone || 'No phone'}</div></div></div></td><td class="px-6 py-3"><div class="text-sm font-medium themed-text">${c.serviceType}</div><div class="text-xs themed-muted">${c.company || 'Independant'}</div></td><td class="px-6 py-3"><span class="font-bold themed-text">Unit ${c.unit}</span>${c.resident ? `<div class="text-xs themed-muted">For: ${c.resident}</div>` : ''}</td><td class="px-6 py-3 text-sm themed-muted font-medium">${tInStr}</td><td class="px-6 py-3 whitespace-nowrap">${sHtml}</td><td class="px-6 py-3 whitespace-nowrap text-right"><div class="flex items-center justify-end">${actHtml} ${delBtn}</div></td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+        };
+        window.filterContractors = () => renderContractors();
+
+        // ==========================================
+        // ADVANCED PACKAGE TRACKING SCANNER ENGINE
+        // ==========================================
+        window.startAdvancedPackageScanner = () => {
+            el('packageScannerContainer').classList.remove('hidden');
+            el('pkgScanFeedback').innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Initializing Camera...`;
+            el('pkgScanFeedback').className = "bg-gray-900/80 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-gray-700 transition-all text-center";
+            pkgScanDebounce = false; isPkgScanning = true;
+
+            html5QrCode_Package = new Html5Qrcode("packageBarcodeReader");
+            
+            // Continuous scanning logic checking every visible frame
+            html5QrCode_Package.start(
+                { facingMode: "environment" },
+                { fps: 20, qrbox: { width: 300, height: 150 }, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.CODE_93, Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.ITF] },
+                (decodedText) => {
+                    if (pkgScanDebounce) return; // Prevent multiple fires
+                    const validation = validateTrackingCandidate(decodedText);
+                    
+                    if (validation && validation.score > 80) {
+                        pkgScanDebounce = true;
+                        el('pkgScanFeedback').innerHTML = `<i class="fa-solid fa-check text-green-400 mr-1"></i> Confirmed: ${validation.carrier}`;
+                        el('pkgScanFeedback').className = "bg-green-900/90 backdrop-blur text-green-100 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-green-700 transition-all text-center";
+                        
+                        // Haptic feedback if supported
+                        if (navigator.vibrate) navigator.vibrate(100);
+                        
+                        el('trackingNumber').value = validation.tracking;
+                        el('carrier').value = validation.carrier;
+                        
+                        showToast(`Tracking Found: ${validation.carrier}`, "success");
+                        setTimeout(() => stopPackageScanner(), 800);
+                    } else {
+                        el('pkgScanFeedback').innerHTML = `<i class="fa-solid fa-magnifying-glass text-blue-400 mr-1"></i> Invalid Barcode Format. Retrying...`;
+                    }
+                },
+                (error) => { /* Ignore standard frame errors */ }
+            ).then(() => {
+                el('pkgScanFeedback').innerHTML = `<i class="fa-solid fa-barcode text-blue-400 mr-1"></i> Scan Tracking Label`;
+                checkFlashlightSupport(html5QrCode_Package, 'btnPkgFlashlight');
+            }).catch(err => {
+                showToast("Camera access denied or unavailable.", "error");
+                stopPackageScanner();
+            });
+        };
+
+        function validateTrackingCandidate(text) {
+            // Strip whitespace, dashes, and invisible chars
+            let t = text.replace(/[\s\-\_]/g, '').toUpperCase();
+            let score = 0; let carrier = "Other";
+            
+            // Strict Regex Checking for Major Carriers
+            if (/^1Z[0-9A-Z]{16}$/.test(t)) { carrier = 'UPS'; score = 100; }
+            else if (/^TBA[0-9]{12,15}$/.test(t)) { carrier = 'Amazon'; score = 100; }
+            else if (/^[0-9]{12,15}$/.test(t) || /^4[0-9]{11}$/.test(t)) { carrier = 'FedEx'; score = 90; } // standard & express
+            else if (/^(9[0-9]{21}|[A-Z]{2}[0-9]{9}[A-Z]{2})$/.test(t)) { carrier = 'USPS'; score = 90; }
+            else if (/^[0-9]{10}$/.test(t)) { carrier = 'DHL'; score = 85; }
+            else if (/^C[0-9]{14}$/.test(t)) { carrier = 'OnTrac'; score = 85; }
+            
+            // If it's a long number but unknown carrier, it might be tracking
+            if (score === 0 && t.length > 8 && /^[0-9A-Z]+$/.test(t)) {
+                score = 50; 
+            }
+            
+            return { tracking: t, carrier, score };
+        }
+
+        window.stopPackageScanner = () => {
+            if (html5QrCode_Package && isPkgScanning) {
+                try { html5QrCode_Package.stop(); } catch(e){}
+                html5QrCode_Package.clear();
+            }
+            isPkgScanning = false; pkgScanDebounce = false;
+            el('packageScannerContainer').classList.add('hidden');
+        };
+
+        // ==========================================
+        // ADVANCED DRIVER'S LICENSE PDF417 SCANNER
+        // ==========================================
+        window.startDLScanner = () => {
+            el('dlScannerContainer').classList.remove('hidden');
+            el('dlScanFeedback').innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Accessing Camera...`;
+            el('dlScanFeedback').className = "bg-gray-900/80 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-gray-700 transition-all text-center max-w-xs";
+            isDLScanning = true;
+
+            html5QrCode_DL = new Html5Qrcode("dlBarcodeReader");
+            
+            // Optimize exclusively for high-density PDF417 format
+            html5QrCode_DL.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 350, height: 180 }, formatsToSupport: [Html5QrcodeSupportedFormats.PDF_417] },
+                (decodedText) => {
+                    const fullName = parseAAMVA(decodedText);
+                    
+                    if (fullName) {
+                        el('dlScanFeedback').innerHTML = `<i class="fa-solid fa-check text-green-400 mr-1"></i> ID Confirmed!`;
+                        el('dlScanFeedback').className = "bg-green-900/90 backdrop-blur text-green-100 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-green-700 transition-all text-center";
+                        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // double pulse
+                        
+                        el('contractorName').value = fullName;
+                        showToast(`Scanned: ${fullName}`, "success");
+                        
+                        setTimeout(() => {
+                            stopDLScanner();
+                            // Auto open front camera for photo capture
+                            startCamera(null);
+                        }, 1000);
+                    } else {
+                        el('dlScanFeedback').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1"></i> Not a valid ID barcode. Retry.`;
+                        el('dlScanFeedback').className = "bg-amber-900/90 backdrop-blur text-amber-100 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-amber-700 transition-all text-center max-w-xs";
+                    }
+                },
+                (error) => { /* Ignore frame scan errors */ }
+            ).then(() => {
+                el('dlScanFeedback').innerHTML = `Align PDF417 barcode on back of ID...`;
+            }).catch(err => {
+                showToast("Camera access denied or unavailable.", "error");
+                stopDLScanner();
+            });
+        };
+
+        function parseAAMVA(text) {
+            // Check if string contains standard AAMVA designators
+            if (!text.includes('DAQ') && !text.includes('DAC') && !text.includes('DCS')) return null;
+            
+            const cleanText = text.replace(/\r/g, '\n');
+            const lines = cleanText.split('\n');
+            let first = '', last = '', middle = '';
+            
+            for (let line of lines) {
+                if (line.startsWith('DAC')) first = line.substring(3).trim();
+                else if (line.indexOf('DAC') > 0) first = line.substring(line.indexOf('DAC')+3).trim(); 
+                
+                if (line.startsWith('DCS')) last = line.substring(3).trim();
+                else if (line.indexOf('DCS') > 0) last = line.substring(line.indexOf('DCS')+3).trim();
+                
+                if (line.startsWith('DAD')) middle = line.substring(3).trim();
+                else if (line.indexOf('DAD') > 0) middle = line.substring(line.indexOf('DAD')+3).trim();
+            }
+            
+            if(!first && !last) return null;
+            
+            // Standardize capitalization (Title Case)
+            const titleCase = (str) => {
+                return str.toLowerCase().split(' ').map(word => {
+                    return (word.charAt(0).toUpperCase() + word.slice(1));
+                }).join(' ');
+            };
+            
+            // Construct name safely avoiding double spaces if no middle name
+            let fullName = `${first} ${middle} ${last}`.replace(/\s+/g, ' ').trim();
+            return titleCase(fullName);
+        }
+
+        window.stopDLScanner = () => {
+            if (html5QrCode_DL && isDLScanning) {
+                try { html5QrCode_DL.stop(); } catch(e){}
+                html5QrCode_DL.clear();
+            }
+            isDLScanning = false;
+            el('dlScannerContainer').classList.add('hidden');
+        };
+
+        function checkFlashlightSupport(scannerObj, btnId) {
+            try {
+                const track = scannerObj.getRunningTrack();
+                const capabilities = track.getCapabilities();
+                if (capabilities.torch) {
+                    el(btnId).classList.remove('hidden');
+                    el(btnId).onclick = () => {
+                        const isTorchOn = el(btnId).classList.contains('bg-yellow-500');
+                        track.applyConstraints({ advanced: [{ torch: !isTorchOn }] });
+                        el(btnId).classList.toggle('bg-yellow-500'); el(btnId).classList.toggle('bg-gray-800/90');
+                        el(btnId).classList.toggle('text-white'); el(btnId).classList.toggle('text-black');
+                    };
+                }
+            } catch (e) { /* Torch not supported */ }
+        }
+
+        window.openLogModal = () => {
+            el('logPackageForm').reset();
+            const now = new Date();
+            el('receiveDateDisplay').value = now.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); 
+            el('receiveDate').value = now.toISOString(); 
+            el('logPackageModal').classList.remove('hidden');
+            setTimeout(() => el('logModalContent').classList.remove('scale-95'), 10);
+        };
+        window.closeLogModal = () => { stopPackageScanner(); el('logModalContent').classList.add('scale-95'); setTimeout(() => el('logPackageModal').classList.add('hidden'), 200); };
+
+        window.handleLogPackage = async (e) => {
+            e.preventDefault(); const btn = el('savePackageBtn'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; btn.disabled = true;
+            try {
+                // Duplicate Tracking Check
+                const tNum = el('trackingNumber').value.toUpperCase();
+                if (tNum) {
+                    const q = query(collection(db, 'system', appId, 'packages'), where("trackingNumber", "==", tNum), where("status", "==", "pending"));
+                    const duplicateSnap = await getDocs(q);
+                    if (!duplicateSnap.empty) {
+                        showToast("Warning: Package with this tracking already awaiting pickup.", "error");
+                        btn.innerHTML = orig; btn.disabled = false; return;
+                    }
+                }
+                
+                await addDoc(collection(db, 'system', appId, 'packages'), { residentName: el('residentName').value, carrier: el('carrier').value, type: el('packageType').value, trackingNumber: tNum, receiveDate: el('receiveDate').value, status: 'pending', deliveredDate: null, pickedUpBy: null, loggedBy: currentUserInfo.name, timestamp: serverTimestamp() });
+                showToast('Package logged successfully!', 'success'); closeLogModal();
+            } catch (err) { showToast("Failed to save record.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        };
+
+        window.startCamera = async (e) => {
+            if(e) e.preventDefault(); el('cameraPrompt').classList.add('hidden'); el('capturedPhoto').classList.add('hidden'); el('cameraVideo').classList.remove('hidden'); el('btnCapture').disabled = false; el('btnCapture').classList.remove('hidden'); el('btnRetake').classList.add('hidden'); capturedImageBase64 = null;
+            try { contractorVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); el('cameraVideo').srcObject = contractorVideoStream; } // Front camera for face photo
+            catch (err) { showToast("Camera permissions required.", "error"); el('cameraPrompt').classList.remove('hidden'); el('cameraVideo').classList.add('hidden'); el('btnCapture').disabled = true; }
+        };
+        window.capturePhoto = (e) => {
+            if(e) e.preventDefault(); const video = el('cameraVideo'); const canvas = document.createElement('canvas'); const w = video.videoWidth || 480; const h = video.videoHeight || 480;
+            canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(video, 0, 0, w, h); capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+            el('cameraVideo').classList.add('hidden'); el('capturedPhoto').src = capturedImageBase64; el('capturedPhoto').classList.remove('hidden'); el('btnCapture').classList.add('hidden'); el('btnRetake').classList.remove('hidden'); stopCamera();
+        };
+        window.stopCamera = () => { if (contractorVideoStream) { contractorVideoStream.getTracks().forEach(t => t.stop()); contractorVideoStream = null; } };
+
+        window.openContractorModal = () => { el('logContractorForm').reset(); el('cameraPrompt').classList.remove('hidden'); el('cameraVideo').classList.add('hidden'); el('capturedPhoto').classList.add('hidden'); el('btnCapture').disabled = true; el('btnCapture').classList.remove('hidden'); el('btnRetake').classList.add('hidden'); capturedImageBase64 = null; el('logContractorModal').classList.remove('hidden'); setTimeout(() => el('logContractorContent').classList.remove('scale-95'), 10); };
+        window.closeContractorModal = () => { stopCamera(); stopDLScanner(); el('logContractorContent').classList.add('scale-95'); setTimeout(() => el('logContractorModal').classList.add('hidden'), 200); };
+        
+        window.handleLogContractor = async (e) => {
+            e.preventDefault(); const btn = el('saveContractorBtn'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; btn.disabled = true;
+            try { await addDoc(collection(db, 'system', appId, 'contractors'), { unit: el('contractorUnit').value.toUpperCase(), resident: el('contractorResident').value, name: el('contractorName').value, company: el('contractorCompany').value, phone: el('contractorPhone').value, serviceType: el('contractorServiceType').value, photoData: capturedImageBase64, status: 'active', timeIn: new Date().toISOString(), timeOut: null, loggedBy: currentUserInfo.name }); showToast('Contractor granted access!', 'success'); closeContractorModal(); } 
+            catch (err) { showToast("Failed to save record.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        };
+
+        window.openCheckoutModal = (id) => {
+            const c = contractorsData.find(x => x.id === id); if(!c) return;
+            el('checkoutContractorId').value = c.id; el('checkoutName').textContent = c.name; el('checkoutCompany').textContent = c.company || c.serviceType;
+            if(c.photoData) { el('checkoutPhoto').src = c.photoData; el('checkoutPhoto').classList.remove('hidden'); el('checkoutNoPhoto').classList.add('hidden'); } else { el('checkoutPhoto').classList.add('hidden'); el('checkoutNoPhoto').classList.remove('hidden'); }
+            el('checkoutContractorModal').classList.remove('hidden'); setTimeout(() => el('checkoutModalContent').classList.remove('scale-95'), 10);
+        };
+        window.closeCheckoutModal = () => { el('checkoutModalContent').classList.add('scale-95'); setTimeout(() => el('checkoutContractorModal').classList.add('hidden'), 200); };
+        window.confirmCheckout = async () => {
+            const btn = el('btnConfirmCheckout'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; btn.disabled = true;
+            try { await updateDoc(doc(db, 'system', appId, 'contractors', el('checkoutContractorId').value), { status: 'checked-out', timeOut: new Date().toISOString(), checkedOutBy: currentUserInfo.name }); showToast('Contractor checked out.', 'success'); closeCheckoutModal(); } 
+            catch (err) { showToast("Failed to checkout.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        };
+
+        window.openDeliverModal = (id) => {
+            const pkg = packagesData.find(p => p.id === id); if (!pkg) return;
+            el('deliveryPackageId').value = pkg.id; el('deliveryResidentName').textContent = pkg.residentName; el('deliveryCarrierType').innerHTML = `${pkg.carrier} - ${pkg.type} ${pkg.trackingNumber ? `(#${pkg.trackingNumber})` : ''}`; el('pickedUpBy').value = '';
+            el('deliverPackageModal').classList.remove('hidden'); setTimeout(() => el('deliverModalContent').classList.remove('scale-95'), 10);
+        };
+        window.closeDeliverModal = () => { el('deliverModalContent').classList.add('scale-95'); setTimeout(() => el('deliverPackageModal').classList.add('hidden'), 200); };
+        window.setPickedUpByResident = () => { const pkg = packagesData.find(p => p.id === el('deliveryPackageId').value); if (pkg) el('pickedUpBy').value = pkg.residentName.split(' - ')[0]; };
+        window.handleDeliverPackage = async (e) => {
+            e.preventDefault(); const btn = el('confirmDeliverBtn'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; btn.disabled = true;
+            try { await updateDoc(doc(db, 'system', appId, 'packages', el('deliveryPackageId').value), { status: 'delivered', pickedUpBy: el('pickedUpBy').value, deliveredDate: new Date().toISOString(), deliveredBy: currentUserInfo.name }); showToast('Handoff completed.', 'success'); closeDeliverModal(); } 
+            catch (err) { showToast("Failed to process handoff.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        };
+
+        window.openImageModal = (src) => { el('lightboxImage').src = src; el('imageLightboxModal').classList.remove('hidden'); };
+        window.closeImageModal = () => { el('imageLightboxModal').classList.add('hidden'); setTimeout(() => { el('lightboxImage').src = ''; }, 300); };
+        window.printDymoLabel = () => { showToast("DYMO Service required for native printing.", "info"); };
+
+        function subscribeToUsers() {
+            unsubscribeUsers = onSnapshot(collection(db, 'system', appId, 'users'), (snap) => {
+                systemUsersData = []; snap.forEach(doc => systemUsersData.push({ id: doc.id, ...doc.data() })); renderUsersTable();
+            });
+        }
+        function renderUsersTable() {
+            const tbody = el('usersTableBody'); tbody.innerHTML = '';
+            systemUsersData.forEach(u => {
+                let badge = u.role === 'admin' ? '<span class="bg-red-500/10 text-red-500 px-2 py-1 rounded text-xs border border-red-500/20">Admin</span>' : (u.role === 'frontdesk' ? '<span class="bg-blue-500/10 text-blue-500 px-2 py-1 rounded text-xs border border-blue-500/20">Front Desk</span>' : '<span class="bg-amber-500/10 text-amber-600 px-2 py-1 rounded text-xs border border-amber-500/20">Receiving</span>');
+                let act = u.id === currentUserInfo.id ? `<span class="text-xs themed-muted italic">Current User</span>` : `<button onclick="openDeleteModal('${u.id}', 'user')" class="text-red-500 hover:bg-black/5 px-3 py-1 rounded text-sm font-semibold border border-transparent">Revoke</button>`;
+                const tr = document.createElement('tr'); tr.className = 'themed-hover themed-panel border-b themed-border';
+                tr.innerHTML = `<td class="px-6 py-4 font-bold themed-text">${u.name}</td><td class="px-6 py-4 font-mono text-sm themed-muted">${u.username}</td><td class="px-6 py-4">${badge}</td><td class="px-6 py-4 text-right">${act}</td>`; tbody.appendChild(tr);
+            });
+        }
+
+        window.openAddUserModal = () => { el('addUserForm').reset(); el('addUserModal').classList.remove('hidden'); setTimeout(() => el('addUserContent').classList.remove('scale-95'), 10); };
+        window.closeAddUserModal = () => { el('addUserContent').classList.add('scale-95'); setTimeout(() => el('addUserModal').classList.add('hidden'), 200); };
+        window.handleAddUser = async (e) => {
+            e.preventDefault(); const btn = el('saveUserBtn'); const orig = btn.innerHTML; btn.innerHTML = 'Saving...'; btn.disabled = true;
+            if (systemUsersData.find(u => u.username.toLowerCase() === el('newUserUsername').value.toLowerCase())) { showToast("Username taken.", "error"); btn.innerHTML = orig; btn.disabled = false; return; }
+            try { await addDoc(collection(db, 'system', appId, 'users'), { name: el('newUserName').value, username: el('newUserUsername').value, password: el('newUserPassword').value, role: el('newUserRole').value, created: new Date().toISOString() }); showToast("Account created.", "success"); closeAddUserModal(); } 
+            catch (err) { showToast("Failed to create user.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        };
+
+        window.openDeleteModal = (id, type) => { el('deleteTargetId').value = id; el('deleteTargetType').value = type; el('deletePackageModal').classList.remove('hidden'); setTimeout(() => el('deleteModalContent').classList.remove('scale-95'), 10); };
+        window.closeDeleteModal = () => { el('deleteModalContent').classList.add('scale-95'); setTimeout(() => el('deletePackageModal').classList.add('hidden'), 200); };
+        window.confirmDeleteAction = async () => {
+            const id = el('deleteTargetId').value; const type = el('deleteTargetType').value; let col = type === 'user' ? 'users' : type === 'contractor' ? 'contractors' : 'packages';
+            try { await deleteDoc(doc(db, 'system', appId, col, id)); showToast(`Record deleted.`, "success"); closeDeleteModal(); } catch (err) { showToast("Deletion failed.", "error"); }
+        };
+
+        window.showToast = (msg, type = 'info') => {
+            const cont = el('toastContainer'); const t = document.createElement('div');
+            const style = type === 'success' ? 'bg-gray-900 border-gray-700 text-green-400' : type === 'error' ? 'bg-red-900 border-red-700 text-red-200' : 'bg-gray-800 border-gray-600 text-blue-400';
+            const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+            t.className = `${style} px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 toast-enter text-sm font-semibold border text-white`; t.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> ${msg}`; cont.appendChild(t);
+            requestAnimationFrame(() => { t.classList.remove('toast-enter'); t.classList.add('toast-enter-active'); }); setTimeout(() => { t.classList.remove('toast-enter-active'); t.classList.add('toast-exit'); setTimeout(() => t.remove(), 300); }, 3000);
+        };
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
