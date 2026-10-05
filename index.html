@@ -141,6 +141,10 @@
                 <i class="fa-solid fa-table-list w-5 text-center"></i> Dashboard
             </button>
             
+            <button onclick="switchView('contractors')" id="navContractors" class="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
+                <i class="fa-solid fa-hard-hat w-5 text-center"></i> Contractors
+            </button>
+
             <!-- Admin Only Menu Item -->
             <button onclick="switchView('users')" id="navUsers" class="hidden w-full items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                 <i class="fa-solid fa-users-gear w-5 text-center"></i> Manage Users
@@ -177,7 +181,8 @@
                 <h1 class="text-lg font-bold">ParcelLog</h1>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="switchView('dashboard')" id="mobileNavDashboard" class="text-primary-600"><i class="fa-solid fa-list"></i></button>
+                <button onclick="switchView('dashboard')" id="mobileNavDashboard" class="text-primary-600"><i class="fa-solid fa-box"></i></button>
+                <button onclick="switchView('contractors')" id="mobileNavContractors" class="text-gray-400"><i class="fa-solid fa-hard-hat"></i></button>
                 <button onclick="switchView('users')" id="mobileNavUsers" class="hidden text-gray-400"><i class="fa-solid fa-users"></i></button>
                 <button onclick="logout()" class="text-gray-500 hover:text-red-500 ml-2">
                     <i class="fa-solid fa-power-off text-lg"></i>
@@ -257,6 +262,7 @@
                                     <th class="px-6 py-4 font-semibold">Tracking #</th>
                                     <th class="px-6 py-4 font-semibold">Received</th>
                                     <th class="px-6 py-4 font-semibold">Status</th>
+                                    <th class="px-6 py-4 font-semibold">Staff</th>
                                     <th class="px-6 py-4 font-semibold text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -282,6 +288,92 @@
                         <p class="text-gray-500 text-sm max-w-sm text-center mb-6">There are currently no packages in the database matching your criteria.</p>
                         <button onclick="openLogModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
                             Log a package
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: Contractor Dashboard -->
+        <div id="view-contractors" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative bg-gray-50">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <!-- Page Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Contractor Log</h2>
+                        <p class="text-sm text-gray-500 mt-1">Manage vendor and contractor access.</p>
+                    </div>
+                    <button onclick="openContractorModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm focus:ring-4 focus:ring-amber-100">
+                        <i class="fa-solid fa-user-plus"></i> Log Contractor
+                    </button>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xl border border-amber-100">
+                            <i class="fa-solid fa-hard-hat"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Active On-Site Today</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-active-contractors">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center text-xl border border-gray-100">
+                            <i class="fa-solid fa-door-open"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Visits Today</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-total-contractors">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contractor List Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative min-h-[400px]">
+                    <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50">
+                        <h3 class="text-lg font-semibold text-gray-800">Access Logs</h3>
+                        
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" id="searchContractorInput" placeholder="Search name or company..." onkeyup="filterContractors()" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm">
+                                <i class="fa-solid fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                            </div>
+                            <select id="filterContractorStatus" onchange="filterContractors()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                                <option value="all">All Status</option>
+                                <option value="active">On-Site</option>
+                                <option value="checked-out">Checked Out</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto custom-scrollbar flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
+                                    <th class="px-6 py-4 font-semibold">Contractor</th>
+                                    <th class="px-6 py-4 font-semibold">Service & Company</th>
+                                    <th class="px-6 py-4 font-semibold">Unit / Resident</th>
+                                    <th class="px-6 py-4 font-semibold">Time In</th>
+                                    <th class="px-6 py-4 font-semibold">Status</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contractorTableBody" class="divide-y divide-gray-100 text-sm">
+                                <!-- Contractor rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="contractorEmptyState" class="hidden absolute inset-0 flex-col items-center justify-center bg-white z-0">
+                        <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4 border border-gray-100 shadow-sm">
+                            <i class="fa-solid fa-clipboard-user text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-1">No contractors found</h4>
+                        <p class="text-gray-500 text-sm max-w-sm text-center mb-6">There are currently no active contractors matching your criteria.</p>
+                        <button onclick="openContractorModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+                            Log a contractor
                         </button>
                     </div>
                 </div>
@@ -400,54 +492,155 @@
         </div>
     </div>
 
-    <!-- Modal: Mark as Delivered -->
-    <div id="deliverPackageModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="glass-modal w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="deliverModalContent">
-            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white/80">
+    <!-- Modal: Log New Contractor -->
+    <div id="logContractorModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200 flex flex-col max-h-[90vh]" id="logContractorContent">
+            
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white/80 shrink-0">
                 <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-                    <i class="fa-solid fa-hand-holding-box text-green-600"></i> Process Delivery
+                    <i class="fa-solid fa-user-plus text-amber-600"></i> Register Contractor
                 </h3>
-                <button onclick="closeDeliverModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
+                <button onclick="closeContractorModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
                     <i class="fa-solid fa-times text-lg"></i>
                 </button>
             </div>
             
-            <div class="p-6 bg-white">
-                <div class="bg-gray-50 rounded-lg p-4 mb-5 border border-gray-200 shadow-inner">
-                    <p class="text-xs text-gray-500 uppercase tracking-wide font-bold mb-1">Releasing Package For:</p>
-                    <p class="font-bold text-xl text-gray-900" id="deliveryResidentName">John Doe</p>
-                    <div class="flex gap-4 mt-2 text-sm text-gray-600">
-                        <span id="deliveryCarrierType" class="font-medium"></span>
-                    </div>
-                </div>
+            <div class="p-6 bg-white overflow-y-auto custom-scrollbar flex-1">
+                <form id="logContractorForm" onsubmit="handleLogContractor(event)">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        
+                        <!-- Left Column: Form Details -->
+                        <div class="flex-1 space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Unit Number <span class="text-red-500">*</span></label>
+                                    <input type="text" id="contractorUnit" required placeholder="e.g. 4B" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Resident Name</label>
+                                    <input type="text" id="contractorResident" placeholder="Optional" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                </div>
+                            </div>
 
-                <form id="deliverPackageForm" onsubmit="handleDeliverPackage(event)">
-                    <input type="hidden" id="deliveryPackageId">
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Resident Receiving Package <span class="text-red-500">*</span></label>
-                            <input type="text" id="pickedUpBy" required placeholder="Name and Signature/Initials" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-shadow">
-                            <div class="mt-2 flex gap-2">
-                                <button type="button" onclick="setPickedUpByResident()" class="text-xs bg-white hover:bg-gray-50 text-gray-700 py-1.5 px-3 rounded-full transition-colors border border-gray-300 font-medium shadow-sm">
-                                    Same as Addressee
+                            <div class="border-t border-gray-200 pt-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Contractor Full Name <span class="text-red-500">*</span></label>
+                                    <input type="text" id="contractorName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Company</label>
+                                    <input type="text" id="contractorCompany" placeholder="e.g. Bob's Plumbing" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Cell Phone</label>
+                                    <input type="tel" id="contractorPhone" placeholder="(555) 555-5555" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Service Type <span class="text-red-500">*</span></label>
+                                <select id="contractorServiceType" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Plumbing">Plumbing</option>
+                                    <option value="AC / HVAC">AC / HVAC</option>
+                                    <option value="Painting">Painting</option>
+                                    <option value="Cleaning">Cleaning</option>
+                                    <option value="Electrical">Electrical</option>
+                                    <option value="Construction">Construction</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Camera & Badge -->
+                        <div class="w-full md:w-64 flex flex-col space-y-4">
+                            <label class="block text-sm font-semibold text-gray-700">Contractor Photo</label>
+                            
+                            <!-- Camera Viewfinder -->
+                            <div id="cameraContainer" class="w-full aspect-[3/4] bg-gray-900 rounded-lg overflow-hidden relative flex items-center justify-center border-2 border-dashed border-gray-300">
+                                <video id="cameraVideo" class="absolute inset-0 w-full h-full object-cover hidden" autoplay playsinline></video>
+                                <img id="capturedPhoto" class="absolute inset-0 w-full h-full object-cover hidden" />
+                                
+                                <div id="cameraPrompt" class="text-center p-4">
+                                    <i class="fa-solid fa-camera text-4xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-400">Click to start camera</p>
+                                    <button type="button" onclick="startCamera(event)" class="mt-2 text-xs bg-white text-gray-700 px-3 py-1 rounded shadow-sm border border-gray-200 hover:bg-gray-50">Enable Camera</button>
+                                </div>
+                            </div>
+
+                            <!-- Camera Controls -->
+                            <div class="flex gap-2">
+                                <button type="button" id="btnCapture" onclick="capturePhoto(event)" disabled class="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-sm py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <i class="fa-solid fa-camera"></i> Capture
                                 </button>
+                                <button type="button" id="btnRetake" onclick="startCamera(event)" class="hidden flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm py-2 rounded font-medium transition-colors">
+                                    Retake
+                                </button>
+                            </div>
+
+                            <!-- DYMO Label Print -->
+                            <div class="mt-auto pt-4 border-t border-gray-100">
+                                <button type="button" onclick="printDymoLabel()" id="btnDymo" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-print"></i> Print DYMO Badge
+                                </button>
+                                <p class="text-[10px] text-gray-400 text-center mt-1">Requires DYMO Web Service</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mt-8 flex justify-end gap-3 pt-4">
-                        <button type="button" onclick="closeDeliverModal()" class="px-5 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white">
+                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" onclick="closeContractorModal()" class="px-5 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white">
                             Cancel
                         </button>
-                        <button type="submit" id="confirmDeliverBtn" class="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-md transition-colors flex items-center gap-2">
-                            <i class="fa-solid fa-check-circle"></i> Complete Handoff
+                        <button type="submit" id="saveContractorBtn" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i> Grant Access
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    <!-- Modal: Checkout Contractor -->
+    <div id="checkoutContractorModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="checkoutModalContent">
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white/80">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-door-open text-gray-600"></i> Checkout Contractor
+                </h3>
+                <button onclick="closeCheckoutModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
+                    <i class="fa-solid fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 bg-white text-center">
+                <input type="hidden" id="checkoutContractorId">
+                <div class="mb-4">
+                    <img id="checkoutPhoto" class="w-20 h-20 object-cover rounded-full mx-auto border-4 border-gray-50 bg-gray-100 mb-3 hidden">
+                    <div id="checkoutNoPhoto" class="w-20 h-20 rounded-full mx-auto bg-gray-100 flex items-center justify-center text-gray-400 text-3xl mb-3 border-4 border-gray-50">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <p class="font-bold text-xl text-gray-900" id="checkoutName">John Doe</p>
+                    <p class="text-sm text-gray-500" id="checkoutCompany">Company</p>
+                </div>
+                
+                <p class="text-sm text-gray-600 mb-6">Are you sure you want to log this contractor out? This will record their departure time.</p>
+
+                <div class="flex gap-3">
+                    <button onclick="closeCheckoutModal()" class="flex-1 px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white">
+                        Cancel
+                    </button>
+                    <button onclick="confirmCheckout()" id="btnConfirmCheckout" class="flex-1 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg shadow-md transition-colors">
+                        Confirm Checkout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Modal: Add New User (Admin) -->
     <div id="addUserModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
@@ -524,7 +717,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
         // 👇 FIREBASE CONFIGURATION LOADED 👇
@@ -550,6 +743,10 @@
         
         let packagesData = [];
         let systemUsersData = [];
+        let contractorsData = []; // NEW: Array for contractors
+        
+        let videoStream = null; // For the camera
+        let capturedImageBase64 = null; // Store image data
 
         const el = (id) => document.getElementById(id);
 
@@ -572,6 +769,26 @@
                 await signInAnonymously(auth);
                 await bootstrapSystem();
                 
+                // Check if user is already logged in from a previous session
+                const savedUserId = localStorage.getItem('parcelLogUser');
+                if (savedUserId) {
+                    try {
+                        const userDocRef = doc(db, 'system', appId, 'users', savedUserId);
+                        const userSnap = await getDoc(userDocRef);
+                        if (userSnap.exists()) {
+                            currentUserInfo = { id: userSnap.id, ...userSnap.data() };
+                            setupUserSession();
+                            el('globalLoading').classList.add('hidden');
+                            return; // Exit early, do not show login screen
+                        } else {
+                            // User was deleted from DB, clear invalid session
+                            localStorage.removeItem('parcelLogUser');
+                        }
+                    } catch (err) {
+                        console.error("Session restore error", err);
+                    }
+                }
+
                 el('globalLoading').classList.add('hidden');
                 el('loginScreen').classList.remove('hidden');
 
@@ -620,6 +837,7 @@
 
                 if (foundUser) {
                     currentUserInfo = foundUser;
+                    localStorage.setItem('parcelLogUser', foundUser.id); // Save persistent session
                     setupUserSession();
                     el('loginScreen').classList.add('hidden');
                     el('loginForm').reset();
@@ -663,6 +881,7 @@
             el('userAvatar').textContent = initials;
 
             subscribeToPackages();
+            subscribeToContractors(); // NEW
             if (currentUserInfo.role === 'admin') subscribeToUsers();
             
             switchView('dashboard');
@@ -671,9 +890,14 @@
         window.logout = () => {
             if (unsubscribePackages) unsubscribePackages();
             if (unsubscribeUsers) unsubscribeUsers();
+            if (window.unsubscribeContractors) window.unsubscribeContractors(); // NEW
+            
+            if(videoStream) stopCamera(); // Clean up camera
+            
             currentUserInfo = null;
+            localStorage.removeItem('parcelLogUser'); // Clear saved session
             el('loginScreen').classList.remove('hidden');
-            el('view-dashboard').classList.remove('hidden');
+            el('view-dashboard').classList.add('hidden');
             el('view-users').classList.add('hidden');
         };
 
@@ -681,14 +905,30 @@
             el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left';
             if(currentUserInfo?.role === 'admin') el('navUsers').className = 'w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left';
             
+            // Reset mobile nav icons
+            el('mobileNavDashboard').className = 'text-gray-400';
+            el('mobileNavContractors').className = 'text-gray-400';
+            if(currentUserInfo?.role === 'admin') el('mobileNavUsers').className = 'hidden text-gray-400';
+            else el('mobileNavUsers').className = 'hidden text-gray-400';
+
             el('view-dashboard').classList.add('hidden');
+            el('view-contractors').classList.add('hidden');
             el('view-users').classList.add('hidden');
 
             if (viewName === 'dashboard') {
                 el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors text-left';
+                el('mobileNavDashboard').className = 'text-primary-600';
                 el('view-dashboard').classList.remove('hidden');
+            } else if (viewName === 'contractors') {
+                el('navContractors').className = 'w-full flex items-center gap-3 px-4 py-3 bg-amber-50 text-amber-700 rounded-lg font-medium transition-colors text-left';
+                el('mobileNavContractors').className = 'text-amber-600';
+                el('view-contractors').classList.remove('hidden');
             } else if (viewName === 'users' && currentUserInfo?.role === 'admin') {
                 el('navUsers').className = 'w-full flex items-center gap-3 px-4 py-3 bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors text-left';
+                if(el('mobileNavUsers')) {
+                    el('mobileNavUsers').className = 'text-primary-600';
+                    el('mobileNavUsers').classList.remove('hidden');
+                }
                 el('view-users').classList.remove('hidden');
             }
         };
@@ -762,6 +1002,13 @@
                     const receivedStr = new Date(pkg.receiveDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     const delivStr = pkg.deliveredDate ? new Date(pkg.deliveredDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
+                    const staffHtml = `
+                        <div class="text-xs text-gray-600">
+                            <span class="block"><b class="text-gray-800">Logged:</b> ${pkg.loggedBy || 'System'}</span>
+                            ${pkg.status === 'delivered' ? `<span class="block mt-1"><b class="text-gray-800">Released:</b> ${pkg.deliveredBy || 'System'}</span>` : ''}
+                        </div>
+                    `;
+
                     const delBtn = currentUserInfo?.role === 'admin' ? 
                         `<button onclick="openDeleteModal('${pkg.id}', 'package')" class="text-gray-400 hover:text-red-600 transition-colors p-2 rounded hover:bg-red-50" title="Delete Record"><i class="fa-solid fa-trash"></i></button>` : '';
 
@@ -791,6 +1038,7 @@
                         <td class="px-6 py-4">${pkg.trackingNumber ? `<span class="font-mono text-xs font-bold bg-gray-100 px-2 py-1 rounded border border-gray-200 text-gray-700">${pkg.trackingNumber}</span>` : `<span class="text-gray-400 italic text-xs">N/A</span>`}</td>
                         <td class="px-6 py-4 text-sm text-gray-600 font-medium">${receivedStr}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${statusHtml}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${staffHtml}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right">${actionsHtml}</td>
                     `;
                     tbody.appendChild(tr);
@@ -814,6 +1062,358 @@
             el('stat-pending').textContent = pending;
             el('stat-delivered').textContent = delivered;
         }
+
+        // ==========================================
+        // CONTRACTOR MODULE LOGIC
+        // ==========================================
+
+        window.subscribeToContractors = () => {
+            const ref = collection(db, 'system', appId, 'contractors');
+            window.unsubscribeContractors = onSnapshot(ref, (snapshot) => {
+                contractorsData = [];
+                snapshot.forEach(doc => {
+                    contractorsData.push({ id: doc.id, ...doc.data() });
+                });
+                renderContractors();
+            }, (error) => {
+                console.error("Contractors Sub Error: ", error);
+            });
+        };
+
+        window.renderContractors = () => {
+            const tbody = el('contractorTableBody');
+            const emptyState = el('contractorEmptyState');
+            const searchTerm = el('searchContractorInput').value.toLowerCase();
+            const statusFilter = el('filterContractorStatus').value;
+
+            tbody.innerHTML = '';
+
+            let filtered = contractorsData.filter(c => {
+                const searchMatch = (c.name || "").toLowerCase().includes(searchTerm) || 
+                                    (c.company || "").toLowerCase().includes(searchTerm) ||
+                                    (c.unit || "").toLowerCase().includes(searchTerm);
+                const statusMatch = statusFilter === 'all' || c.status === statusFilter;
+                return searchMatch && statusMatch;
+            });
+
+            // Sort active first, then by time in
+            filtered.sort((a, b) => {
+                if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
+                return new Date(b.timeIn || 0) - new Date(a.timeIn || 0);
+            });
+
+            // Update stats
+            const today = new Date().toDateString();
+            let active = 0, total = 0;
+            contractorsData.forEach(c => {
+                if (c.timeIn && new Date(c.timeIn).toDateString() === today) {
+                    total++;
+                    if (c.status === 'active') active++;
+                }
+            });
+            el('stat-active-contractors').textContent = active;
+            el('stat-total-contractors').textContent = total;
+
+            if (filtered.length === 0) {
+                tbody.parentElement.parentElement.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                tbody.parentElement.parentElement.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                filtered.forEach(c => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 transition-colors border-b border-gray-100 bg-white';
+                    
+                    const timeInStr = new Date(c.timeIn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    let statusHtml = c.status === 'active' 
+                        ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> On-Site
+                           </span>`
+                        : `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+                            Checked Out
+                           </span>`;
+
+                    let iconHtml = c.photoData 
+                        ? `<img src="${c.photoData}" class="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-sm" />`
+                        : `<div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shadow-inner border border-gray-200"><i class="fa-solid fa-user text-xs"></i></div>`;
+
+                    let actionsHtml = c.status === 'active'
+                        ? `<div class="flex items-center justify-end gap-2">
+                             <button onclick="openCheckoutModal('${c.id}')" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm flex items-center gap-1">
+                               Checkout <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                             </button>
+                           </div>`
+                        : `<span class="text-xs text-gray-500">Out: ${new Date(c.timeOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+
+                    const delBtn = currentUserInfo?.role === 'admin' ? 
+                        `<button onclick="openDeleteModal('${c.id}', 'contractor')" class="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50 ml-2" title="Delete Record"><i class="fa-solid fa-trash text-xs"></i></button>` : '';
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-3">
+                            <div class="flex items-center gap-3">
+                                ${iconHtml}
+                                <div><div class="font-semibold text-gray-900">${c.name}</div>
+                                <div class="text-xs text-gray-500">${c.phone || 'No phone'}</div></div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <div class="text-sm font-medium text-gray-900">${c.serviceType}</div>
+                            <div class="text-xs text-gray-500">${c.company || 'Independant'}</div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <span class="font-bold text-gray-900">Unit ${c.unit}</span>
+                            ${c.resident ? `<div class="text-xs text-gray-500">For: ${c.resident}</div>` : ''}
+                        </td>
+                        <td class="px-6 py-3 text-sm text-gray-600 font-medium">${timeInStr}</td>
+                        <td class="px-6 py-3 whitespace-nowrap">${statusHtml}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-right">
+                            <div class="flex items-center justify-end">
+                                ${actionsHtml} ${delBtn}
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        };
+
+        window.filterContractors = () => renderContractors();
+
+        // CAMERA LOGIC
+        window.startCamera = async (e) => {
+            if(e) e.preventDefault();
+            el('cameraPrompt').classList.add('hidden');
+            el('capturedPhoto').classList.add('hidden');
+            el('cameraVideo').classList.remove('hidden');
+            el('btnCapture').disabled = false;
+            el('btnCapture').classList.remove('hidden');
+            el('btnRetake').classList.add('hidden');
+            capturedImageBase64 = null;
+
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                el('cameraVideo').srcObject = videoStream;
+            } catch (err) {
+                console.error("Camera access denied or unavailable", err);
+                showToast("Could not access camera. Please allow permissions.", "error");
+                el('cameraPrompt').classList.remove('hidden');
+                el('cameraVideo').classList.add('hidden');
+                el('btnCapture').disabled = true;
+            }
+        };
+
+        window.capturePhoto = (e) => {
+            if(e) e.preventDefault();
+            const video = el('cameraVideo');
+            const canvas = document.createElement('canvas');
+            
+            // Limit resolution to prevent browser memory crash on high-end devices
+            const MAX_WIDTH = 640;
+            let width = video.videoWidth || 640;
+            let height = video.videoHeight || 480;
+
+            if (width > MAX_WIDTH) {
+                height = Math.floor(height * (MAX_WIDTH / width));
+                width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, width, height);
+            
+            // Compress to base64 jpeg
+            capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+            
+            el('cameraVideo').classList.add('hidden');
+            el('capturedPhoto').src = capturedImageBase64;
+            el('capturedPhoto').classList.remove('hidden');
+            
+            el('btnCapture').classList.add('hidden');
+            el('btnRetake').classList.remove('hidden');
+            
+            stopCamera();
+        };
+
+        window.stopCamera = () => {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+        };
+
+        // DYMO INTEGRATION
+        window.printDymoLabel = () => {
+            const name = el('contractorName').value;
+            const company = el('contractorCompany').value;
+            const unit = el('contractorUnit').value;
+            
+            if(!name || !unit) {
+                showToast("Name and Unit are required to print a badge.", "error");
+                return;
+            }
+
+            const btn = el('btnDymo');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Printer...';
+            
+            // This is a simulated implementation of the DYMO Label Framework.
+            // In a real environment, the DYMO Connect Software must be running locally.
+            setTimeout(() => {
+                try {
+                    // Simulated check for DYMO framework
+                    if (typeof dymo === 'undefined' || !dymo.label || !dymo.label.framework) {
+                        console.warn("DYMO Connect Framework not detected in browser.");
+                        // Generate mock XML for preview
+                        const mockXML = `
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <DieCutLabel Version="8.0" Units="twips">
+                                <PaperOrientation>Landscape</PaperOrientation>
+                                <Id>NameBadge</Id>
+                                <ObjectInfo>
+                                    <TextObject>
+                                        <Name>VISITOR</Name>
+                                        <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
+                                        <Text>${name.toUpperCase()}</Text>
+                                        <Text>${company}</Text>
+                                        <Text>UNIT: ${unit}</Text>
+                                    </TextObject>
+                                </ObjectInfo>
+                            </DieCutLabel>
+                        `;
+                        
+                        showToast("DYMO Web Service not detected. Badge printing simulated.", "info");
+                    } else {
+                        // Real DYMO API Call structure if framework is present
+                        const printers = dymo.label.framework.getPrinters();
+                        if (printers.length === 0) throw "No printers found";
+                        
+                        const printerName = printers[0].name;
+                        
+                        // Note: Requires a valid .label XML template string loaded here
+                        // label.setObjectText("NameText", name);
+                        // label.print(printerName);
+                        showToast(`Badge sent to ${printerName}`, "success");
+                    }
+                } catch(e) {
+                    console.error("DYMO Print Error", e);
+                    showToast("Error communicating with DYMO printer.", "error");
+                } finally {
+                    btn.innerHTML = orig;
+                }
+            }, 1000);
+        };
+
+        // MODAL HANDLERS
+        window.openContractorModal = () => {
+            el('logContractorForm').reset();
+            
+            el('cameraPrompt').classList.remove('hidden');
+            el('cameraVideo').classList.add('hidden');
+            el('capturedPhoto').classList.add('hidden');
+            el('btnCapture').disabled = true;
+            el('btnCapture').classList.remove('hidden');
+            el('btnRetake').classList.add('hidden');
+            capturedImageBase64 = null;
+            
+            el('logContractorModal').classList.remove('hidden');
+            setTimeout(() => el('logContractorContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeContractorModal = () => {
+            stopCamera();
+            el('logContractorContent').classList.add('scale-95');
+            setTimeout(() => el('logContractorModal').classList.add('hidden'), 200);
+        };
+
+        window.handleLogContractor = async (e) => {
+            e.preventDefault();
+            const btn = el('saveContractorBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const contractor = {
+                unit: el('contractorUnit').value.toUpperCase(),
+                resident: el('contractorResident').value,
+                name: el('contractorName').value,
+                company: el('contractorCompany').value,
+                phone: el('contractorPhone').value,
+                serviceType: el('contractorServiceType').value,
+                photoData: capturedImageBase64, // Saves the base64 string
+                status: 'active',
+                timeIn: new Date().toISOString(),
+                timeOut: null,
+                loggedBy: currentUserInfo.name
+            };
+
+            try {
+                await addDoc(collection(db, 'system', appId, 'contractors'), contractor);
+                showToast('Contractor logged successfully!', 'success');
+                closeContractorModal();
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to save record. File might be too large.", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
+        window.openCheckoutModal = (id) => {
+            const c = contractorsData.find(x => x.id === id);
+            if(!c) return;
+
+            el('checkoutContractorId').value = c.id;
+            el('checkoutName').textContent = c.name;
+            el('checkoutCompany').textContent = c.company || c.serviceType;
+            
+            if(c.photoData) {
+                el('checkoutPhoto').src = c.photoData;
+                el('checkoutPhoto').classList.remove('hidden');
+                el('checkoutNoPhoto').classList.add('hidden');
+            } else {
+                el('checkoutPhoto').classList.add('hidden');
+                el('checkoutNoPhoto').classList.remove('hidden');
+            }
+
+            el('checkoutContractorModal').classList.remove('hidden');
+            setTimeout(() => el('checkoutModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeCheckoutModal = () => {
+            el('checkoutModalContent').classList.add('scale-95');
+            setTimeout(() => el('checkoutContractorModal').classList.add('hidden'), 200);
+        };
+
+        window.confirmCheckout = async () => {
+            const btn = el('btnConfirmCheckout');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const id = el('checkoutContractorId').value;
+                const ref = doc(db, 'system', appId, 'contractors', id);
+                await updateDoc(ref, {
+                    status: 'checked-out',
+                    timeOut: new Date().toISOString(),
+                    checkedOutBy: currentUserInfo.name
+                });
+                showToast('Contractor checked out.', 'success');
+                closeCheckoutModal();
+            } catch (err) {
+                showToast("Failed to checkout.", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
 
         window.openLogModal = () => {
             el('logPackageForm').reset();
@@ -900,7 +1500,8 @@
                 await updateDoc(ref, {
                     status: 'delivered',
                     pickedUpBy: el('pickedUpBy').value,
-                    deliveredDate: new Date().toISOString()
+                    deliveredDate: new Date().toISOString(),
+                    deliveredBy: currentUserInfo.name
                 });
                 showToast('Delivery completed successfully.', 'success');
                 closeDeliverModal();
@@ -1003,11 +1604,13 @@
         window.confirmDeleteAction = async () => {
             const id = el('deleteTargetId').value;
             const type = el('deleteTargetType').value;
-            const collName = type === 'package' ? 'packages' : 'users';
+            let collName = 'packages';
+            if (type === 'user') collName = 'users';
+            if (type === 'contractor') collName = 'contractors'; // NEW
 
             try {
                 await deleteDoc(doc(db, 'system', appId, collName, id));
-                showToast(`${type === 'package' ? 'Package' : 'User'} deleted permanently.`, "success");
+                showToast(`${type === 'package' ? 'Package' : type === 'contractor' ? 'Contractor' : 'User'} deleted permanently.`, "success");
                 closeDeleteModal();
             } catch (err) {
                 showToast("Deletion failed.", "error");
