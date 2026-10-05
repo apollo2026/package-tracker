@@ -2,72 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apollo Security - Receiving App</title>
-    
-    <!-- External Libraries -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concierge Package Tracker - Pro Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <!-- NEW: Enterprise Barcode Scanning Library -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
-        :root {
-            --bg-color: #f3f4f6;
-            --text-main: #1f2937;
-            --panel-bg: #ffffff;
-            --border-color: #e5e7eb;
-            --input-bg: #ffffff;
-            --text-muted: #6b7280;
-            --hover-bg: #f9fafb;
-        }
-
-        html.dark-theme {
-            --bg-color: #0f172a; /* Slate 900 */
-            --text-main: #f8fafc; /* Slate 50 */
-            --panel-bg: #1e293b; /* Slate 800 */
-            --border-color: #334155; /* Slate 700 */
-            --input-bg: #0f172a; 
-            --text-muted: #94a3b8; /* Slate 400 */
-            --hover-bg: #334155;
-        }
-
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            transition: background-color 0.3s, color 0.3s;
+            background-color: #f3f4f6;
         }
 
-        .themed-panel { background-color: var(--panel-bg); border-color: var(--border-color); color: var(--text-main); }
-        .themed-input { background-color: var(--input-bg); border-color: var(--border-color); color: var(--text-main); }
-        .themed-text { color: var(--text-main); }
-        .themed-muted { color: var(--text-muted); }
-        .themed-border { border-color: var(--border-color); }
-        .themed-hover:hover { background-color: var(--hover-bg); }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        html.dark-theme .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
-
+        /* iOS Smoothness Fixes */
         @media screen and (max-width: 768px) {
-            input, select, textarea { font-size: 16px !important; } 
-            .glass-modal { border-radius: 1.5rem !important; } 
+            input, select, textarea {
+                font-size: 16px !important; /* Prevents iOS auto-zoom on focus */
+            }
+            .glass-modal {
+                border-radius: 1.5rem !important; /* Smoother iPhone-like rounded corners */
+            }
         }
-
-        .toast-enter { transform: translateY(100%); opacity: 0; }
-        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .toast-exit { transform: translateX(100%); opacity: 0; transition: all 0.3s ease-in; }
-        
-        /* Barcode Scanner Overrides */
-        #packageBarcodeReader video, #dlBarcodeReader video { object-fit: cover !important; border-radius: 0.5rem; }
-    </style>
+    </script>
 </head>
-<body class="h-screen flex overflow-hidden">
+<body class="text-gray-800 h-screen flex overflow-hidden">
 
     <!-- Global App Loading Overlay -->
     <div id="globalLoading" class="fixed inset-0 bg-gray-950 z-[200] flex flex-col items-center justify-center">
@@ -79,33 +38,33 @@
     </div>
 
     <!-- Login Screen -->
-    <div id="loginScreen" class="fixed inset-0 bg-black flex items-center justify-center z-[100] hidden">
-        <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+    <div id="loginScreen" class="fixed inset-0 bg-gray-950 z-[100] flex items-center justify-center hidden">
+        <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md animate-fade-in">
             <div class="text-center mb-8">
                 <div class="bg-gray-800 border border-gray-700 text-white p-3 rounded-lg inline-block mb-3 shadow-md">
                     <i class="fa-solid fa-cube text-3xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-white tracking-tight">Apollo Security</h1>
-                <p class="text-gray-400 mt-2 text-sm font-medium uppercase tracking-wider">Receiving App</p>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Apollo Security</h1>
+                <p class="text-gray-400 mt-1 text-sm font-medium uppercase tracking-wider">Receiving App</p>
             </div>
             
-            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1">Username</label>
                     <div class="relative">
-                        <i class="fa-solid fa-user absolute left-3 top-3.5 text-gray-500"></i>
-                        <input type="text" id="loginUsername" required class="w-full pl-10 pr-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600">
+                        <i class="fa-solid fa-user absolute left-3 top-3 text-gray-500"></i>
+                        <input type="text" id="loginUsername" required class="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500" placeholder="e.g. admin">
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1">Password</label>
                     <div class="relative">
-                        <i class="fa-solid fa-lock absolute left-3 top-3.5 text-gray-500"></i>
-                        <input type="password" id="loginPassword" required class="w-full pl-10 pr-4 py-3 bg-black border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-600">
+                        <i class="fa-solid fa-lock absolute left-3 top-3 text-gray-500"></i>
+                        <input type="password" id="loginPassword" required class="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500" placeholder="••••••••">
                     </div>
                 </div>
                 
-                <button type="submit" id="loginBtn" class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-bold transition duration-200 mt-6 shadow-lg">
+                <button type="submit" id="loginBtn" class="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white py-2.5 px-4 rounded-lg font-medium transition-colors mt-6 shadow-md border border-primary-500">
                     Sign In <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </form>
@@ -113,42 +72,45 @@
     </div>
 
     <!-- Sidebar -->
-    <aside class="w-64 themed-panel shadow-lg hidden md:flex flex-col h-full z-10 relative border-r themed-border">
-        <div class="p-6 border-b themed-border flex items-center gap-3">
+    <aside class="w-64 bg-white shadow-lg hidden md:flex flex-col h-full z-10 relative">
+        <div class="p-6 border-b border-gray-100 flex items-center gap-3">
             <div class="bg-gray-900 text-white p-2 rounded-lg shadow-sm border border-gray-800">
                 <i class="fa-solid fa-cube text-xl"></i>
             </div>
-            <h1 class="text-lg font-bold themed-text tracking-tight">Apollo Security</h1>
+            <h1 class="text-lg font-bold text-gray-800 tracking-tight">Apollo Security</h1>
         </div>
         
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
-            <button onclick="switchView('dashboard')" id="navDashboard" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-500/10 text-blue-600 rounded-lg font-medium transition-colors text-left">
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <button onclick="switchView('dashboard')" id="navDashboard" class="w-full flex items-center gap-3 px-4 py-3 bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors text-left">
                 <i class="fa-solid fa-box w-5 text-center"></i> Packages
             </button>
             
-            <button onclick="switchView('contractors')" id="navContractors" class="w-full flex items-center gap-3 px-4 py-3 themed-muted themed-hover rounded-lg font-medium transition-colors text-left">
+            <button onclick="switchView('contractors')" id="navContractors" class="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                 <i class="fa-solid fa-hard-hat w-5 text-center"></i> Contractors
             </button>
 
-            <button onclick="switchView('users')" id="navUsers" class="hidden w-full items-center gap-3 px-4 py-3 themed-muted themed-hover rounded-lg font-medium transition-colors text-left">
+            <!-- Admin Only Menu Item -->
+            <button onclick="switchView('users')" id="navUsers" class="hidden w-full items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left">
                 <i class="fa-solid fa-users-gear w-5 text-center"></i> Manage Users
             </button>
         </nav>
         
-        <div class="p-4 border-t themed-border themed-panel">
+        <div class="p-4 border-t border-gray-100 bg-gray-50/50">
             <div class="flex items-center justify-between px-2 py-2">
                 <div class="flex items-center gap-3">
-                    <div id="userAvatar" class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border border-blue-200">U</div>
+                    <div id="userAvatar" class="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold border border-primary-200">
+                        U
+                    </div>
                     <div>
-                        <p class="text-sm font-bold themed-text" id="userNameDisplay">Staff Member</p>
-                        <p class="text-xs text-blue-500 font-medium" id="userRoleDisplay">Active Shift</p>
+                        <p class="text-sm font-bold text-gray-900" id="userNameDisplay">Staff Member</p>
+                        <p class="text-xs text-primary-600 font-medium" id="userRoleDisplay">Active Shift</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-1">
-                    <button onclick="toggleTheme()" class="themed-muted hover:text-blue-500 transition-colors p-2 rounded-lg themed-hover" title="Toggle Theme">
+                    <button onclick="toggleTheme()" class="text-gray-400 hover:text-primary-500 transition-colors p-2 rounded-lg hover:bg-primary-50" title="Toggle Theme">
                         <i class="fa-solid fa-moon" id="desktopThemeIcon"></i>
                     </button>
-                    <button onclick="logout()" class="themed-muted hover:text-red-500 transition-colors p-2 rounded-lg themed-hover" title="Logout">
+                    <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50" title="Logout">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i>
                     </button>
                 </div>
@@ -156,24 +118,26 @@
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-gray-50">
         
         <!-- Mobile Header -->
-        <header class="md:hidden themed-panel shadow-sm border-b themed-border p-4 flex justify-between items-center z-10">
+        <header class="md:hidden bg-white shadow-sm p-4 flex justify-between items-center z-10">
             <div class="flex items-center gap-2">
                 <div class="bg-gray-900 text-white p-1.5 rounded-lg border border-gray-800">
-                    <i class="fa-solid fa-cube text-sm"></i>
+                    <i class="fa-solid fa-cube"></i>
                 </div>
-                <h1 class="text-base font-bold themed-text truncate">Apollo Security</h1>
+                <h1 class="text-base font-bold truncate">Apollo Security</h1>
             </div>
-            <div class="flex items-center gap-4">
-                <button onclick="toggleTheme()" class="themed-muted hover:text-blue-500">
-                    <i class="fa-solid fa-moon text-xl" id="mobileThemeIcon"></i>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTheme()" class="text-gray-500 hover:text-primary-500">
+                    <i class="fa-solid fa-moon text-lg" id="mobileThemeIcon"></i>
                 </button>
-                <button onclick="switchView('dashboard')" id="mobileNavDashboard" class="text-blue-500 flex flex-col items-center"><i class="fa-solid fa-box text-xl"></i><span class="text-[10px] mt-1 font-bold">Pkgs</span></button>
-                <button onclick="switchView('contractors')" id="mobileNavContractors" class="themed-muted flex flex-col items-center"><i class="fa-solid fa-hard-hat text-xl"></i><span class="text-[10px] mt-1 font-bold">Vndrs</span></button>
-                <button onclick="logout()" class="themed-muted hover:text-red-500 flex flex-col items-center ml-1">
-                    <i class="fa-solid fa-power-off text-xl"></i><span class="text-[10px] mt-1 font-bold">Exit</span>
+                <button onclick="switchView('dashboard')" id="mobileNavDashboard" class="text-primary-600"><i class="fa-solid fa-box"></i></button>
+                <button onclick="switchView('contractors')" id="mobileNavContractors" class="text-gray-400"><i class="fa-solid fa-hard-hat"></i></button>
+                <button onclick="switchView('users')" id="mobileNavUsers" class="hidden text-gray-400"><i class="fa-solid fa-users"></i></button>
+                <button onclick="logout()" class="text-gray-500 hover:text-red-500 ml-2">
+                    <i class="fa-solid fa-power-off text-lg"></i>
                 </button>
             </div>
         </header>
@@ -184,50 +148,56 @@
                 <!-- Page Header -->
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h2 class="text-2xl font-bold themed-text">Packages</h2>
-                        <p class="text-sm themed-muted mt-1">Real-time synced inventory.</p>
+                        <h2 class="text-2xl font-bold text-gray-900">Packages</h2>
+                        <p class="text-sm text-gray-500 mt-1">Real-time synced inventory.</p>
                     </div>
-                    <button onclick="openLogModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm focus:ring-4 focus:ring-blue-500/30">
+                    <button onclick="openLogModal()" class="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm focus:ring-4 focus:ring-primary-100">
                         <i class="fa-solid fa-plus"></i> Log New Package
                     </button>
                 </div>
 
                 <!-- Stats Row -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl border border-blue-500/20"><i class="fa-solid fa-cubes"></i></div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl border border-blue-100">
+                            <i class="fa-solid fa-cubes"></i>
+                        </div>
                         <div>
-                            <p class="text-sm font-medium themed-muted">Total Today</p>
-                            <p class="text-2xl font-bold themed-text" id="stat-total">0</p>
+                            <p class="text-sm font-medium text-gray-500">Total Today</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-total">0</p>
                         </div>
                     </div>
-                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl border border-amber-500/20"><i class="fa-solid fa-clock"></i></div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xl border border-amber-100">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
                         <div>
-                            <p class="text-sm font-medium themed-muted">Awaiting Pickup</p>
-                            <p class="text-2xl font-bold themed-text" id="stat-pending">0</p>
+                            <p class="text-sm font-medium text-gray-500">Awaiting Pickup</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-pending">0</p>
                         </div>
                     </div>
-                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center text-xl border border-green-500/20"><i class="fa-solid fa-check-double"></i></div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xl border border-green-100">
+                            <i class="fa-solid fa-check-double"></i>
+                        </div>
                         <div>
-                            <p class="text-sm font-medium themed-muted">Delivered Today</p>
-                            <p class="text-2xl font-bold themed-text" id="stat-delivered">0</p>
+                            <p class="text-sm font-medium text-gray-500">Delivered Today</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-delivered">0</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Package List Table -->
-                <div class="themed-panel rounded-xl shadow-sm border themed-border overflow-hidden flex flex-col relative min-h-[400px]">
-                    <div class="p-5 border-b themed-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-black/5">
-                        <h3 class="text-lg font-semibold themed-text">Inventory Logs</h3>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative min-h-[400px]">
+                    <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50">
+                        <h3 class="text-lg font-semibold text-gray-800">Inventory Logs</h3>
                         
                         <div class="flex gap-2 w-full sm:w-auto">
                             <div class="relative w-full sm:w-64">
-                                <input type="text" id="searchInput" placeholder="Search resident or tracking..." onkeyup="filterTable()" class="themed-input w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                <i class="fa-solid fa-search absolute left-3 top-2.5 themed-muted"></i>
+                                <input type="text" id="searchInput" placeholder="Search resident or tracking..." onkeyup="filterTable()" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+                                <i class="fa-solid fa-search absolute left-3 top-2.5 text-gray-400"></i>
                             </div>
-                            <select id="filterStatus" onchange="filterTable()" class="themed-input border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <select id="filterStatus" onchange="filterTable()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
                                 <option value="all">All Status</option>
                                 <option value="pending">Awaiting Pickup</option>
                                 <option value="delivered">Delivered</option>
@@ -238,7 +208,7 @@
                     <div class="overflow-x-auto custom-scrollbar flex-1">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-black/5 themed-muted text-xs uppercase tracking-wider border-b themed-border">
+                                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
                                     <th class="px-6 py-4 font-semibold">Resident</th>
                                     <th class="px-6 py-4 font-semibold">Carrier & Type</th>
                                     <th class="px-6 py-4 font-semibold">Tracking #</th>
@@ -248,26 +218,27 @@
                                     <th class="px-6 py-4 font-semibold text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="packageTableBody" class="divide-y themed-border text-sm">
+                            <tbody id="packageTableBody" class="divide-y divide-gray-100 text-sm">
                                 <!-- Package rows injected via JS -->
                             </tbody>
                         </table>
                     </div>
                     
-                    <div id="tableLoading" class="absolute inset-0 themed-panel/80 backdrop-blur-sm flex items-center justify-center z-10 hidden">
-                        <div class="text-blue-500 flex flex-col items-center themed-panel p-6 rounded-xl shadow-lg border border-blue-500/20">
+                    <!-- Empty States -->
+                    <div id="tableLoading" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 hidden">
+                        <div class="text-primary-600 flex flex-col items-center bg-white p-6 rounded-xl shadow-lg border border-primary-100">
                             <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i>
-                            <span class="font-semibold mt-2 themed-text">Syncing Database...</span>
+                            <span class="font-semibold mt-2">Syncing Database...</span>
                         </div>
                     </div>
 
-                    <div id="emptyState" class="hidden absolute inset-0 flex-col items-center justify-center themed-panel z-0">
-                        <div class="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center themed-muted mb-4 border themed-border">
+                    <div id="emptyState" class="hidden absolute inset-0 flex-col items-center justify-center bg-white z-0">
+                        <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4 border border-gray-100 shadow-sm">
                             <i class="fa-solid fa-box-open text-3xl"></i>
                         </div>
-                        <h4 class="text-lg font-semibold themed-text mb-1">No packages found</h4>
-                        <p class="themed-muted text-sm max-w-sm text-center mb-6">There are currently no packages matching your criteria.</p>
-                        <button onclick="openLogModal()" class="themed-input border themed-text px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/5 transition-colors shadow-sm">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-1">No packages found</h4>
+                        <p class="text-gray-500 text-sm max-w-sm text-center mb-6">There are currently no packages in the database matching your criteria.</p>
+                        <button onclick="openLogModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
                             Log a package
                         </button>
                     </div>
@@ -276,48 +247,52 @@
         </div>
 
         <!-- VIEW: Contractor Dashboard -->
-        <div id="view-contractors" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative">
+        <div id="view-contractors" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative bg-gray-50">
             <div class="max-w-7xl mx-auto space-y-6">
                 <!-- Page Header -->
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h2 class="text-2xl font-bold themed-text">Contractor Log</h2>
-                        <p class="text-sm themed-muted mt-1">Manage vendor and contractor access.</p>
+                        <h2 class="text-2xl font-bold text-gray-900">Contractor Log</h2>
+                        <p class="text-sm text-gray-500 mt-1">Manage vendor and contractor access.</p>
                     </div>
-                    <button onclick="openContractorModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm focus:ring-4 focus:ring-amber-500/30">
+                    <button onclick="openContractorModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm focus:ring-4 focus:ring-amber-100">
                         <i class="fa-solid fa-user-plus"></i> Log Contractor
                     </button>
                 </div>
 
                 <!-- Stats Row -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl border border-amber-500/20"><i class="fa-solid fa-hard-hat"></i></div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xl border border-amber-100">
+                            <i class="fa-solid fa-hard-hat"></i>
+                        </div>
                         <div>
-                            <p class="text-sm font-medium themed-muted">Active On-Site Today</p>
-                            <p class="text-2xl font-bold themed-text" id="stat-active-contractors">0</p>
+                            <p class="text-sm font-medium text-gray-500">Active On-Site Today</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-active-contractors">0</p>
                         </div>
                     </div>
-                    <div class="themed-panel p-6 rounded-xl shadow-sm border themed-border flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-full bg-black/5 themed-muted flex items-center justify-center text-xl border themed-border"><i class="fa-solid fa-door-open"></i></div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center text-xl border border-gray-100">
+                            <i class="fa-solid fa-door-open"></i>
+                        </div>
                         <div>
-                            <p class="text-sm font-medium themed-muted">Total Visits Today</p>
-                            <p class="text-2xl font-bold themed-text" id="stat-total-contractors">0</p>
+                            <p class="text-sm font-medium text-gray-500">Total Visits Today</p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-total-contractors">0</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Contractor List Table -->
-                <div class="themed-panel rounded-xl shadow-sm border themed-border overflow-hidden flex flex-col relative min-h-[400px]">
-                    <div class="p-5 border-b themed-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-black/5">
-                        <h3 class="text-lg font-semibold themed-text">Access Logs</h3>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative min-h-[400px]">
+                    <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50">
+                        <h3 class="text-lg font-semibold text-gray-800">Access Logs</h3>
                         
                         <div class="flex gap-2 w-full sm:w-auto">
                             <div class="relative w-full sm:w-64">
-                                <input type="text" id="searchContractorInput" placeholder="Search name or company..." onkeyup="filterContractors()" class="themed-input w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
-                                <i class="fa-solid fa-search absolute left-3 top-2.5 themed-muted"></i>
+                                <input type="text" id="searchContractorInput" placeholder="Search name or company..." onkeyup="filterContractors()" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm">
+                                <i class="fa-solid fa-search absolute left-3 top-2.5 text-gray-400"></i>
                             </div>
-                            <select id="filterContractorStatus" onchange="filterContractors()" class="themed-input border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <select id="filterContractorStatus" onchange="filterContractors()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
                                 <option value="all">All Status</option>
                                 <option value="active">On-Site</option>
                                 <option value="checked-out">Checked Out</option>
@@ -328,7 +303,7 @@
                     <div class="overflow-x-auto custom-scrollbar flex-1">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-black/5 themed-muted text-xs uppercase tracking-wider border-b themed-border">
+                                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
                                     <th class="px-6 py-4 font-semibold">Contractor</th>
                                     <th class="px-6 py-4 font-semibold">Service & Company</th>
                                     <th class="px-6 py-4 font-semibold">Unit / Resident</th>
@@ -337,17 +312,19 @@
                                     <th class="px-6 py-4 font-semibold text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="contractorTableBody" class="divide-y themed-border text-sm">
+                            <tbody id="contractorTableBody" class="divide-y divide-gray-100 text-sm">
                                 <!-- Contractor rows injected via JS -->
                             </tbody>
                         </table>
                     </div>
                     
-                    <div id="contractorEmptyState" class="hidden absolute inset-0 flex-col items-center justify-center themed-panel z-0">
-                        <div class="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center themed-muted mb-4 border themed-border shadow-sm"><i class="fa-solid fa-clipboard-user text-3xl"></i></div>
-                        <h4 class="text-lg font-semibold themed-text mb-1">No contractors found</h4>
-                        <p class="themed-muted text-sm max-w-sm text-center mb-6">There are currently no active contractors matching your criteria.</p>
-                        <button onclick="openContractorModal()" class="themed-input border themed-text px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/5 transition-colors shadow-sm">
+                    <div id="contractorEmptyState" class="hidden absolute inset-0 flex-col items-center justify-center bg-white z-0">
+                        <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4 border border-gray-100 shadow-sm">
+                            <i class="fa-solid fa-clipboard-user text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-1">No contractors found</h4>
+                        <p class="text-gray-500 text-sm max-w-sm text-center mb-6">There are currently no active contractors matching your criteria.</p>
+                        <button onclick="openContractorModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
                             Log a contractor
                         </button>
                     </div>
@@ -356,30 +333,30 @@
         </div>
 
         <!-- VIEW: Manage Users (Admin Only) -->
-        <div id="view-users" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative">
+        <div id="view-users" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar hidden relative bg-gray-100">
             <div class="max-w-5xl mx-auto space-y-6">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h2 class="text-2xl font-bold themed-text">User Management</h2>
-                        <p class="text-sm themed-muted mt-1">Create and remove staff login credentials.</p>
+                        <h2 class="text-2xl font-bold text-gray-900">User Management</h2>
+                        <p class="text-sm text-gray-500 mt-1">Create and remove staff login credentials.</p>
                     </div>
-                    <button onclick="openAddUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm">
+                    <button onclick="openAddUserModal()" class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-user-plus"></i> Add New Staff
                     </button>
                 </div>
 
-                <div class="themed-panel rounded-xl shadow-sm border themed-border overflow-hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-black/5 themed-muted text-xs uppercase tracking-wider border-b themed-border">
+                                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
                                     <th class="px-6 py-4 font-semibold">Staff Name</th>
                                     <th class="px-6 py-4 font-semibold">Username</th>
                                     <th class="px-6 py-4 font-semibold">Role/Position</th>
                                     <th class="px-6 py-4 font-semibold text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="usersTableBody" class="divide-y themed-border text-sm">
+                            <tbody id="usersTableBody" class="divide-y divide-gray-100 text-sm">
                                 <!-- User rows injected via JS -->
                             </tbody>
                         </table>
@@ -390,74 +367,47 @@
     </main>
 
     <!-- Modal: Log New Package -->
-    <div id="logPackageModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="themed-panel w-full max-w-lg rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar transform scale-95 transition-transform duration-200" id="logModalContent">
+    <div id="logPackageModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="logModalContent">
             
-            <div class="flex justify-between items-center p-6 border-b themed-border sticky top-0 themed-panel z-10">
-                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
-                    <i class="fa-solid fa-box text-blue-500"></i> Log Incoming Package
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white/80">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-box text-primary-600"></i> Log Incoming Package
                 </h3>
-                <button onclick="closeLogModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                <button onclick="closeLogModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
                     <i class="fa-solid fa-times text-lg"></i>
                 </button>
             </div>
             
-            <div class="p-6">
+            <div class="p-6 bg-white">
                 <form id="logPackageForm" onsubmit="handleLogPackage(event)">
-                    <div class="space-y-5">
+                    <div class="space-y-4">
                         
-                        <!-- AI & Barcode Viewport (Hidden by default) -->
-                        <div id="packageScannerContainer" class="hidden w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-inner border border-gray-600">
-                            <!-- html5-qrcode targets this div -->
-                            <div id="packageBarcodeReader" class="w-full h-full hidden"></div>
+                        <!-- NEW: Hidden Scanner Viewport -->
+                        <div id="packageScannerContainer" class="hidden w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-inner border border-gray-300">
+                            <video id="packageScannerVideo" class="w-full h-full object-cover" playsinline autoplay></video>
+                            <div class="absolute inset-0 border-2 border-primary-500/50 m-6 rounded-lg pointer-events-none"></div>
                             
-                            <!-- Standard video for OCR -->
-                            <video id="packageOCRVideo" class="w-full h-full object-cover hidden" playsinline autoplay></video>
-                            
-                            <div id="scannerOverlay" class="absolute inset-0 border-2 border-blue-500/50 m-6 rounded-lg pointer-events-none hidden"></div>
-                            
-                            <!-- Scanner Controls -->
                             <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
-                                <button type="button" onclick="stopPackageScanner()" class="bg-gray-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-red-600"><i class="fa-solid fa-times"></i></button>
-                                <button type="button" id="btnCaptureOCR" onclick="capturePackageLabelOCR()" class="hidden bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-500"><i class="fa-solid fa-camera"></i></button>
+                                <button type="button" onclick="stopPackageScanner()" class="bg-gray-800 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg"><i class="fa-solid fa-times"></i></button>
+                                <button type="button" onclick="capturePackageLabel()" class="bg-primary-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg"><i class="fa-solid fa-camera"></i></button>
                             </div>
                             
-                            <!-- Loading States -->
                             <div id="scannerLoading" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-20">
-                                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2 text-blue-400"></i>
-                                <p class="text-sm font-medium" id="scannerLoadingText">Scanning...</p>
+                                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2 text-primary-400"></i>
+                                <p class="text-sm font-medium">Scanning AI Label...</p>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
-                                <span>Resident Name / Unit <span class="text-red-500">*</span></span>
-                                <!-- OCR Name Scanner Button -->
-                                <button type="button" onclick="startPackageOCRScanner()" class="text-blue-500 hover:text-blue-400 bg-blue-500/10 px-2 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1 border border-blue-500/20">
-                                    <i class="fa-solid fa-font"></i> Scan Name
-                                </button>
-                            </label>
-                            <input type="text" id="residentName" required placeholder="e.g. Jane Doe - Apt 4B" class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-shadow">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
-                                <span>Tracking Number</span>
-                                <!-- Hardware Barcode Scanner Button -->
-                                <button type="button" onclick="startPackageBarcodeScanner()" class="text-green-500 hover:text-green-400 bg-green-500/10 px-2 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1 border border-green-500/20">
-                                    <i class="fa-solid fa-barcode"></i> Scan Barcode
-                                </button>
-                            </label>
-                            <div class="relative">
-                                <input type="text" id="trackingNumber" placeholder="Scan or type tracking #" class="themed-input w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm uppercase">
-                                <i class="fa-solid fa-barcode absolute left-3 top-3.5 themed-muted"></i>
-                            </div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Resident Name / Unit <span class="text-red-500">*</span></label>
+                            <input type="text" id="residentName" required placeholder="e.g. Jane Doe - Apt 4B" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-shadow">
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-semibold themed-text mb-1">Carrier <span class="text-red-500">*</span></label>
-                                <select id="carrier" required class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Carrier <span class="text-red-500">*</span></label>
+                                <select id="carrier" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
                                     <option value="" disabled selected>Select...</option>
                                     <option value="UPS">UPS</option>
                                     <option value="FedEx">FedEx</option>
@@ -469,8 +419,8 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold themed-text mb-1">Package Type <span class="text-red-500">*</span></label>
-                                <select id="packageType" required class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Package Type <span class="text-red-500">*</span></label>
+                                <select id="packageType" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
                                     <option value="" disabled selected>Select...</option>
                                     <option value="Box">Box</option>
                                     <option value="Envelope">Envelope</option>
@@ -481,20 +431,33 @@
                                 </select>
                             </div>
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1 flex justify-between items-center">
+                                <span>Tracking Number</span>
+                                <button type="button" onclick="startPackageScanner()" class="text-primary-600 hover:text-primary-800 bg-primary-50 hover:bg-primary-100 px-3 py-1 rounded-full text-xs font-bold transition-colors flex items-center gap-1">
+                                    <i class="fa-solid fa-expand"></i> Scan Label
+                                </button>
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="trackingNumber" placeholder="Scan or type tracking #" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm uppercase">
+                                <i class="fa-solid fa-barcode absolute left-3 top-2.5 text-gray-400"></i>
+                            </div>
+                        </div>
                         
-                        <div class="bg-blue-500/5 p-4 rounded-lg border border-blue-500/10 mt-2">
-                             <label class="block text-sm font-bold themed-text mb-1"><i class="fa-solid fa-clock text-blue-500 mr-1"></i> Received Timestamp</label>
-                             <p class="text-xs themed-muted mb-2">Time is automatically captured to ensure accurate logging.</p>
-                             <input type="text" id="receiveDateDisplay" disabled class="themed-input w-full px-4 py-2 border rounded-lg text-sm cursor-not-allowed opacity-70">
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-2">
+                             <label class="block text-sm font-bold text-gray-700 mb-1"><i class="fa-solid fa-clock text-blue-500 mr-1"></i> Received Timestamp (Automated)</label>
+                             <p class="text-xs text-gray-500 mb-2">Time is automatically captured to ensure accurate logging.</p>
+                             <input type="text" id="receiveDateDisplay" disabled class="w-full px-4 py-2 border border-gray-300 bg-gray-100 text-gray-700 font-medium rounded-lg text-sm cursor-not-allowed">
                              <input type="hidden" id="receiveDate">
                         </div>
                     </div>
 
-                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t themed-border">
-                        <button type="button" onclick="closeLogModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors border themed-border themed-input">
+                    <div class="mt-8 flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="closeLogModal()" class="px-5 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white">
                             Cancel
                         </button>
-                        <button type="submit" id="savePackageBtn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                        <button type="submit" id="savePackageBtn" class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
                             <i class="fa-solid fa-check"></i> Save Record
                         </button>
                     </div>
@@ -504,80 +467,56 @@
     </div>
 
     <!-- Modal: Log New Contractor -->
-    <div id="logContractorModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="themed-panel w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200 flex flex-col max-h-[90vh]" id="logContractorContent">
+    <div id="logContractorModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200 flex flex-col max-h-[90vh]" id="logContractorContent">
             
-            <div class="flex justify-between items-center p-6 border-b themed-border shrink-0">
-                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus text-amber-500"></i> Register Contractor
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white/80 shrink-0">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-amber-600"></i> Register Contractor
                 </h3>
-                <button onclick="closeContractorModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                <button onclick="closeContractorModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
                     <i class="fa-solid fa-times text-lg"></i>
                 </button>
             </div>
             
-            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+            <div class="p-6 bg-white overflow-y-auto custom-scrollbar flex-1">
                 <form id="logContractorForm" onsubmit="handleLogContractor(event)">
                     <div class="flex flex-col md:flex-row gap-8">
                         
                         <!-- Left Column: Form Details -->
                         <div class="flex-1 space-y-4">
-                            
-                            <!-- DL Scanner Container (Hidden by default) -->
-                            <div id="dlScannerContainer" class="hidden w-full aspect-video bg-black rounded-xl overflow-hidden relative shadow-inner border border-gray-600 mb-4">
-                                <div id="dlBarcodeReader" class="w-full h-full"></div>
-                                
-                                <!-- NEW: Hidden file input to allow manual photo capture for barcode -->
-                                <input type="file" id="dlFileInput" accept="image/*" capture="environment" class="hidden" onchange="handleDLFileScan(event)">
-                                
-                                <div class="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-10 px-2">
-                                    <button type="button" onclick="stopDLScanner()" class="bg-gray-800 text-white px-4 py-2 rounded-full shadow-lg hover:bg-red-600 text-sm font-medium"><i class="fa-solid fa-times"></i> Cancel Scan</button>
-                                    <!-- NEW: Manual Photo Button -->
-                                    <button type="button" onclick="document.getElementById('dlFileInput').click()" class="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-500 text-sm font-medium"><i class="fa-solid fa-camera"></i> Take Photo Instead</button>
-                                </div>
-
-                                <!-- NEW: Loading Screen while scanning image -->
-                                <div id="dlScannerLoading" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white z-20">
-                                    <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2 text-blue-400"></i>
-                                    <p class="text-sm font-medium">Scanning Image...</p>
-                                </div>
-                            </div>
-
-                            <div class="border-b themed-border pb-4">
-                                <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
-                                    <span>Contractor Full Name <span class="text-red-500">*</span></span>
-                                    <button type="button" onclick="startDLScanner()" class="text-amber-500 hover:text-amber-400 bg-amber-500/10 px-2 py-1 rounded text-xs font-bold transition-colors flex items-center gap-1 border border-amber-500/20">
-                                        <i class="fa-solid fa-id-card"></i> Scan DL (Back)
-                                    </button>
-                                </label>
-                                <input type="text" id="contractorName" required placeholder="e.g. John Doe" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
-                            </div>
-
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-semibold themed-text mb-1">Unit Number <span class="text-red-500">*</span></label>
-                                    <input type="text" id="contractorUnit" required placeholder="e.g. 4B" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Unit Number <span class="text-red-500">*</span></label>
+                                    <input type="text" id="contractorUnit" required placeholder="e.g. 4B" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-semibold themed-text mb-1">Resident Name</label>
-                                    <input type="text" id="contractorResident" placeholder="Optional" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Resident Name</label>
+                                    <input type="text" id="contractorResident" placeholder="Optional" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                                </div>
+                            </div>
+
+                            <div class="border-t border-gray-200 pt-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Contractor Full Name <span class="text-red-500">*</span></label>
+                                    <input type="text" id="contractorName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-semibold themed-text mb-1">Company</label>
-                                    <input type="text" id="contractorCompany" placeholder="e.g. Bob's Plumbing" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Company</label>
+                                    <input type="text" id="contractorCompany" placeholder="e.g. Bob's Plumbing" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-semibold themed-text mb-1">Cell Phone</label>
-                                    <input type="tel" id="contractorPhone" placeholder="(555) 555-5555" class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Cell Phone</label>
+                                    <input type="tel" id="contractorPhone" placeholder="(555) 555-5555" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                                 </div>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-semibold themed-text mb-1">Service Type <span class="text-red-500">*</span></label>
-                                <select id="contractorServiceType" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-500">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Service Type <span class="text-red-500">*</span></label>
+                                <select id="contractorServiceType" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
                                     <option value="" disabled selected>Select...</option>
                                     <option value="Plumbing">Plumbing</option>
                                     <option value="AC / HVAC">AC / HVAC</option>
@@ -592,44 +531,44 @@
 
                         <!-- Right Column: Camera & Badge -->
                         <div class="w-full md:w-64 flex flex-col space-y-4">
-                            <label class="block text-sm font-semibold themed-text text-center">Contractor Photo</label>
+                            <label class="block text-sm font-semibold text-gray-700 text-center">Contractor Photo</label>
                             
-                            <!-- Circular iOS Style Camera Viewfinder -->
-                            <div id="cameraContainer" class="w-40 h-40 mx-auto bg-black rounded-full overflow-hidden relative flex items-center justify-center border-4 border-gray-600 shadow-md">
+                            <!-- Camera Viewfinder - UPDATED FOR SMALLER CIRCULAR iOS FEEL -->
+                            <div id="cameraContainer" class="w-40 h-40 mx-auto bg-gray-900 rounded-full overflow-hidden relative flex items-center justify-center border-4 border-gray-200 shadow-md">
                                 <video id="cameraVideo" class="absolute inset-0 w-full h-full object-cover hidden" autoplay playsinline></video>
                                 <img id="capturedPhoto" class="absolute inset-0 w-full h-full object-cover hidden" />
                                 
                                 <div id="cameraPrompt" class="text-center p-4">
                                     <i class="fa-solid fa-camera text-3xl text-gray-400 mb-1"></i>
-                                    <button type="button" onclick="startCamera(event)" class="mt-1 text-[10px] uppercase font-bold bg-white text-gray-900 px-2 py-1 rounded shadow-sm hover:bg-gray-200">Enable</button>
+                                    <button type="button" onclick="startCamera(event)" class="mt-1 text-[10px] uppercase font-bold bg-white text-gray-700 px-2 py-1 rounded shadow-sm hover:bg-gray-50">Enable</button>
                                 </div>
                             </div>
 
                             <!-- Camera Controls -->
                             <div class="flex gap-2">
-                                <button type="button" id="btnCapture" onclick="capturePhoto(event)" disabled class="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-sm py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
+                                <button type="button" id="btnCapture" onclick="capturePhoto(event)" disabled class="flex-1 bg-amber-500 hover:bg-amber-600 text-white text-sm py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                                     <i class="fa-solid fa-camera"></i> Capture
                                 </button>
-                                <button type="button" id="btnRetake" onclick="startCamera(event)" class="hidden flex-1 bg-gray-600 hover:bg-gray-500 text-white text-sm py-2 rounded font-medium transition-colors">
+                                <button type="button" id="btnRetake" onclick="startCamera(event)" class="hidden flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm py-2 rounded font-medium transition-colors">
                                     Retake
                                 </button>
                             </div>
 
                             <!-- DYMO Label Print -->
-                            <div class="mt-auto pt-4 border-t themed-border">
+                            <div class="mt-auto pt-4 border-t border-gray-100">
                                 <button type="button" onclick="printDymoLabel()" id="btnDymo" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-print"></i> Print Badge
+                                    <i class="fa-solid fa-print"></i> Print DYMO Badge
                                 </button>
-                                <p class="text-[10px] themed-muted text-center mt-1">Requires DYMO Web Service</p>
+                                <p class="text-[10px] text-gray-400 text-center mt-1">Requires DYMO Web Service</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t themed-border">
-                        <button type="button" onclick="closeContractorModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors border themed-border themed-input">
+                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" onclick="closeContractorModal()" class="px-5 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white">
                             Cancel
                         </button>
-                        <button type="submit" id="saveContractorBtn" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                        <button type="submit" id="saveContractorBtn" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
                             <i class="fa-solid fa-check"></i> Grant Access
                         </button>
                     </div>
@@ -638,81 +577,36 @@
         </div>
     </div>
 
-    <!-- Modal: Deliver Package -->
-    <div id="deliverPackageModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="themed-panel w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="deliverModalContent">
-            <div class="flex justify-between items-center p-6 border-b themed-border">
-                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
-                    <i class="fa-solid fa-people-carry-box text-green-500"></i> Hand Off Package
-                </h3>
-                <button onclick="closeDeliverModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
-                    <i class="fa-solid fa-times text-lg"></i>
-                </button>
-            </div>
-            
-            <div class="p-6">
-                <form onsubmit="handleDeliverPackage(event)">
-                    <input type="hidden" id="deliveryPackageId">
-                    
-                    <div class="bg-black/5 p-4 rounded-xl mb-6 border themed-border text-center">
-                        <p class="text-sm themed-muted mb-1">Releasing package for:</p>
-                        <p class="text-xl font-bold themed-text" id="deliveryResidentName">Resident Name</p>
-                        <p class="text-sm font-medium text-blue-500 mt-1" id="deliveryCarrierType">Carrier Info</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold themed-text mb-1 flex justify-between items-center">
-                            <span>Picked Up By <span class="text-red-500">*</span></span>
-                            <button type="button" onclick="setPickedUpByResident()" class="text-blue-500 text-xs font-bold hover:underline">
-                                Set to Resident Name
-                            </button>
-                        </label>
-                        <input type="text" id="pickedUpBy" required placeholder="Name of person picking up" class="themed-input w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 transition-shadow">
-                    </div>
-
-                    <div class="flex justify-end gap-3 pt-4 border-t themed-border">
-                        <button type="button" onclick="closeDeliverModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors border themed-border themed-input">
-                            Cancel
-                        </button>
-                        <button type="submit" id="confirmDeliverBtn" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
-                            <i class="fa-solid fa-check-double"></i> Complete Hand Off
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal: Checkout Contractor -->
-    <div id="checkoutContractorModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="themed-panel w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="checkoutModalContent">
-            <div class="flex justify-between items-center p-6 border-b themed-border">
-                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
-                    <i class="fa-solid fa-door-open text-amber-600"></i> Checkout Contractor
+    <div id="checkoutContractorModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="checkoutModalContent">
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-white/80">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-door-open text-gray-600"></i> Checkout Contractor
                 </h3>
-                <button onclick="closeCheckoutModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                <button onclick="closeCheckoutModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
                     <i class="fa-solid fa-times text-lg"></i>
                 </button>
             </div>
             
-            <div class="p-6 text-center">
+            <div class="p-6 bg-white text-center">
                 <input type="hidden" id="checkoutContractorId">
                 <div class="mb-4">
-                    <img id="checkoutPhoto" class="w-20 h-20 object-cover rounded-full mx-auto border-4 border-black/10 bg-black/5 mb-3 hidden shadow-md">
-                    <div id="checkoutNoPhoto" class="w-20 h-20 rounded-full mx-auto bg-black/5 flex items-center justify-center themed-muted text-3xl mb-3 border-4 border-black/10 shadow-inner">
+                    <img id="checkoutPhoto" class="w-20 h-20 object-cover rounded-full mx-auto border-4 border-gray-50 bg-gray-100 mb-3 hidden">
+                    <div id="checkoutNoPhoto" class="w-20 h-20 rounded-full mx-auto bg-gray-100 flex items-center justify-center text-gray-400 text-3xl mb-3 border-4 border-gray-50">
                         <i class="fa-solid fa-user"></i>
                     </div>
-                    <p class="font-bold text-xl themed-text" id="checkoutName">John Doe</p>
-                    <p class="text-sm themed-muted" id="checkoutCompany">Company</p>
+                    <p class="font-bold text-xl text-gray-900" id="checkoutName">John Doe</p>
+                    <p class="text-sm text-gray-500" id="checkoutCompany">Company</p>
                 </div>
                 
-                <p class="text-sm themed-muted mb-6">Are you sure you want to log this contractor out? This will record their departure time.</p>
+                <p class="text-sm text-gray-600 mb-6">Are you sure you want to log this contractor out? This will record their departure time.</p>
 
                 <div class="flex gap-3">
-                    <button onclick="closeCheckoutModal()" class="flex-1 px-4 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors border themed-border themed-input">
+                    <button onclick="closeCheckoutModal()" class="flex-1 px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white">
                         Cancel
                     </button>
-                    <button onclick="confirmCheckout()" id="btnConfirmCheckout" class="flex-1 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg shadow-md transition-colors">
+                    <button onclick="confirmCheckout()" id="btnConfirmCheckout" class="flex-1 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg shadow-md transition-colors">
                         Confirm Checkout
                     </button>
                 </div>
@@ -720,14 +614,15 @@
         </div>
     </div>
 
-    <!-- Modal: Add New User -->
-    <div id="addUserModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="themed-panel w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="addUserContent">
-            <div class="flex justify-between items-center p-6 border-b themed-border">
-                <h3 class="text-xl font-bold themed-text flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus text-blue-500"></i> Create Staff Login
+
+    <!-- Modal: Add New User (Admin) -->
+    <div id="addUserModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="addUserContent">
+            <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-primary-600"></i> Create Staff Login
                 </h3>
-                <button onclick="closeAddUserModal()" class="themed-muted hover:text-red-500 transition-colors rounded-full p-2 hover:bg-black/5">
+                <button onclick="closeAddUserModal()" class="text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100">
                     <i class="fa-solid fa-times text-lg"></i>
                 </button>
             </div>
@@ -735,29 +630,29 @@
             <div class="p-6">
                 <form id="addUserForm" onsubmit="handleAddUser(event)" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold themed-text mb-1">Staff Full Name <span class="text-red-500">*</span></label>
-                        <input type="text" id="newUserName" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g. Sarah Smith">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Staff Full Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="e.g. Sarah Smith">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold themed-text mb-1">Login Username <span class="text-red-500">*</span></label>
-                        <input type="text" id="newUserUsername" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g. ssmith">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Login Username <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserUsername" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="e.g. ssmith">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold themed-text mb-1">Temporary Password <span class="text-red-500">*</span></label>
-                        <input type="text" id="newUserPassword" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Assign a password">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Temporary Password <span class="text-red-500">*</span></label>
+                        <input type="text" id="newUserPassword" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="Assign a password">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold themed-text mb-1">Role / Department <span class="text-red-500">*</span></label>
-                        <select id="newUserRole" required class="themed-input w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Role / Department <span class="text-red-500">*</span></label>
+                        <select id="newUserRole" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white">
                             <option value="frontdesk">Front Desk (Standard)</option>
                             <option value="receiving">Receiving (Standard)</option>
                             <option value="admin">Manager (Admin)</option>
                         </select>
                     </div>
 
-                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t themed-border">
-                        <button type="button" onclick="closeAddUserModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg border themed-border">Cancel</button>
-                        <button type="submit" id="saveUserBtn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm">
+                    <div class="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg">Cancel</button>
+                        <button type="submit" id="saveUserBtn" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg shadow-sm">
                             Create Account
                         </button>
                     </div>
@@ -766,36 +661,26 @@
         </div>
     </div>
 
-    <!-- Modal: Delete Confirmation -->
+    <!-- Modal: Delete Confirmation (Admin Only) -->
     <div id="deletePackageModal" class="fixed inset-0 bg-red-900/40 backdrop-blur-sm hidden z-[60] flex items-center justify-center p-4">
-        <div class="themed-panel w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden p-6 text-center transform scale-95 transition-transform duration-200 border border-red-500/20" id="deleteModalContent">
-            <div class="mx-auto w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center text-2xl mb-4 border border-red-500/20 shadow-inner">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden p-6 text-center transform scale-95 transition-transform duration-200" id="deleteModalContent">
+            <div class="mx-auto w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center text-2xl mb-4 border border-red-100">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <h3 class="text-xl font-bold themed-text mb-2">Delete Record?</h3>
-            <p class="text-sm themed-muted mb-6">This action cannot be undone. It will permanently remove this item from the database.</p>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Delete Record?</h3>
+            <p class="text-gray-500 text-sm mb-6">This action cannot be undone. It will permanently remove this item from the database.</p>
             
             <input type="hidden" id="deleteTargetId">
             <input type="hidden" id="deleteTargetType">
             
             <div class="flex gap-3 justify-center">
-                <button onclick="closeDeleteModal()" class="px-5 py-2.5 themed-text font-medium hover:bg-black/5 rounded-lg transition-colors w-full border themed-border themed-input">
+                <button onclick="closeDeleteModal()" class="px-5 py-2.5 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors w-full border border-gray-200">
                     Cancel
                 </button>
                 <button onclick="confirmDeleteAction()" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg shadow-sm transition-colors w-full flex items-center justify-center gap-2">
                     <i class="fa-solid fa-trash"></i> Delete
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- Image Lightbox Modal for Enlaging Photos -->
-    <div id="imageLightboxModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4 transition-opacity duration-300" onclick="closeImageModal()">
-        <div class="relative max-w-2xl w-full flex justify-center items-center flex-col" onclick="event.stopPropagation()">
-            <button onclick="closeImageModal()" class="absolute -top-12 right-0 text-gray-400 hover:text-white transition-colors bg-gray-900/50 rounded-full w-10 h-10 flex items-center justify-center border border-gray-700">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
-            <img id="lightboxImage" src="" class="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-gray-700">
         </div>
     </div>
 
@@ -807,6 +692,10 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // ==========================================
+        // 👇 FIREBASE CONFIGURATION LOADED 👇
+        // ==========================================
+        
         const firebaseConfig = {
             apiKey: "AIzaSyDUhBrBkG8SSPvsv9e7BwnApate8jI1WVA",
             authDomain: "buildingpackagetracker.firebaseapp.com",
@@ -818,6 +707,8 @@
         
         const appId = 'my-building-tracker-v1'; 
         
+        // ==========================================
+        
         let app, db, auth;
         let currentUserInfo = null; 
         let unsubscribePackages = null;
@@ -825,27 +716,26 @@
         
         let packagesData = [];
         let systemUsersData = [];
-        let contractorsData = []; 
+        let contractorsData = []; // NEW: Array for contractors
         
-        // Camera & Scanner State variables
-        let videoStream = null; 
-        let capturedImageBase64 = null; 
-        let packageOCRVideoStream = null; 
-        let html5QrCode_Package = null;
-        let html5QrCode_DL = null;
+        let videoStream = null; // For the camera
+        let capturedImageBase64 = null; // Store image data
+        
+        let packageVideoStream = null; // NEW: For the package scanner
 
         const el = (id) => document.getElementById(id);
 
         async function initApp() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark-theme');
-                if(el('desktopThemeIcon')) el('desktopThemeIcon').className = 'fa-solid fa-sun';
-                if(el('mobileThemeIcon')) el('mobileThemeIcon').className = 'fa-solid fa-sun text-xl';
-            }
-
             try {
-                if(!firebaseConfig.apiKey) throw new Error("Missing Config");
+                if(!firebaseConfig.apiKey) {
+                    el('globalLoading').innerHTML = `
+                        <div class="text-center p-6 bg-red-50 rounded-xl border border-red-200 max-w-lg">
+                            <i class="fa-solid fa-triangle-exclamation text-red-500 text-4xl mb-3"></i>
+                            <h2 class='text-red-700 font-bold text-xl mb-2'>Firebase Not Connected</h2>
+                            <p class="text-red-600 text-sm">You need to paste your Firebase Config into the HTML file before the app will load!</p>
+                        </div>`;
+                    return;
+                }
 
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
@@ -854,6 +744,7 @@
                 await signInAnonymously(auth);
                 await bootstrapSystem();
                 
+                // Check if user is already logged in from a previous session
                 const savedUserId = localStorage.getItem('parcelLogUser');
                 if (savedUserId) {
                     try {
@@ -863,8 +754,9 @@
                             currentUserInfo = { id: userSnap.id, ...userSnap.data() };
                             setupUserSession();
                             el('globalLoading').classList.add('hidden');
-                            return; 
+                            return; // Exit early, do not show login screen
                         } else {
+                            // User was deleted from DB, clear invalid session
                             localStorage.removeItem('parcelLogUser');
                         }
                     } catch (err) {
@@ -877,15 +769,23 @@
 
             } catch (error) {
                 console.error("App Init Failed:", error);
-                el('globalLoading').innerHTML = `<div class="text-center p-6"><h2 class='text-red-500 font-bold text-xl'>Connection Error</h2><p class="text-gray-400 mt-2">Failed to connect to the database. Check your Firebase config.</p></div>`;
+                el('globalLoading').innerHTML = `<div class="text-center p-6"><h2 class='text-red-500 font-bold text-xl'>Connection Error</h2><p class="text-gray-600 mt-2">Failed to connect to the database. Check your Firebase config.</p></div>`;
             }
         }
 
         async function bootstrapSystem() {
             const usersRef = collection(db, 'system', appId, 'users');
             const usersSnap = await getDocs(usersRef); 
+            
             if (usersSnap.empty) {
-                await addDoc(usersRef, { name: "System Admin", username: "admin", password: "password", role: "admin", created: new Date().toISOString() });
+                await addDoc(usersRef, {
+                    name: "System Admin",
+                    username: "admin",
+                    password: "password",
+                    role: "admin",
+                    created: new Date().toISOString()
+                });
+                console.log("Default admin account created.");
             }
         }
 
@@ -894,21 +794,25 @@
             const u = el('loginUsername').value.trim();
             const p = el('loginPassword').value.trim();
             const btn = el('loginBtn');
+            
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
             btn.disabled = true;
 
             try {
                 const usersRef = collection(db, 'system', appId, 'users');
                 const usersSnap = await getDocs(usersRef);
+                
                 let foundUser = null;
                 usersSnap.forEach(doc => {
                     const data = doc.data();
-                    if (data.username === u && data.password === p) foundUser = { id: doc.id, ...data };
+                    if (data.username === u && data.password === p) {
+                        foundUser = { id: doc.id, ...data };
+                    }
                 });
 
                 if (foundUser) {
                     currentUserInfo = foundUser;
-                    localStorage.setItem('parcelLogUser', foundUser.id);
+                    localStorage.setItem('parcelLogUser', foundUser.id); // Save persistent session
                     setupUserSession();
                     el('loginScreen').classList.add('hidden');
                     el('loginForm').reset();
@@ -917,32 +821,42 @@
                     showToast("Invalid username or password.", "error");
                 }
             } catch (err) {
+                console.error("Login Error:", err);
                 showToast("System error during login. Check console.", "error");
             } finally {
-                btn.innerHTML = 'Sign In <i class="fa-solid fa-arrow-right"></i>'; btn.disabled = false;
+                btn.innerHTML = 'Sign In <i class="fa-solid fa-arrow-right"></i>';
+                btn.disabled = false;
             }
         };
 
         function setupUserSession() {
             el('userNameDisplay').textContent = currentUserInfo.name;
             let displayRole = "Staff";
-            let color = "bg-blue-500/10 text-blue-500 border-blue-500/30";
+            let color = "bg-primary-100 text-primary-700";
             let initials = currentUserInfo.name.charAt(0).toUpperCase();
 
             if (currentUserInfo.role === 'admin') {
-                displayRole = "Manager / Admin"; color = "bg-red-500/10 text-red-500 border-red-500/30";
-                el('navUsers').classList.remove('hidden'); el('navUsers').classList.add('flex');
-            } else {
-                if(currentUserInfo.role === 'frontdesk') displayRole = "Front Desk";
-                if(currentUserInfo.role === 'receiving') displayRole = "Receiving";
-                el('navUsers').classList.add('hidden'); el('navUsers').classList.remove('flex');
+                displayRole = "Manager / Admin";
+                color = "bg-red-100 text-red-700 border-red-200";
+                el('navUsers').classList.remove('hidden');
+                el('navUsers').classList.add('flex');
+                el('mobileNavUsers').classList.remove('hidden');
+            } else if (currentUserInfo.role === 'frontdesk') {
+                displayRole = "Front Desk";
+                el('navUsers').classList.add('hidden');
+                el('mobileNavUsers').classList.add('hidden');
+            } else if (currentUserInfo.role === 'receiving') {
+                displayRole = "Receiving";
+                el('navUsers').classList.add('hidden');
+                el('mobileNavUsers').classList.add('hidden');
             }
 
             el('userRoleDisplay').textContent = displayRole;
             el('userAvatar').className = `w-9 h-9 rounded-full flex items-center justify-center font-bold border ${color}`;
             el('userAvatar').textContent = initials;
 
-            subscribeToPackages(); subscribeToContractors(); 
+            subscribeToPackages();
+            subscribeToContractors(); // NEW
             if (currentUserInfo.role === 'admin') subscribeToUsers();
             
             switchView('dashboard');
@@ -951,13 +865,15 @@
         window.logout = () => {
             if (unsubscribePackages) unsubscribePackages();
             if (unsubscribeUsers) unsubscribeUsers();
-            if (window.unsubscribeContractors) window.unsubscribeContractors(); 
+            if (window.unsubscribeContractors) window.unsubscribeContractors(); // NEW
             
-            stopCamera(); stopPackageScanner(); stopDLScanner();
+            if(videoStream) stopCamera(); // Clean up camera
             
-            currentUserInfo = null; localStorage.removeItem('parcelLogUser'); 
+            currentUserInfo = null;
+            localStorage.removeItem('parcelLogUser'); // Clear saved session
             el('loginScreen').classList.remove('hidden');
-            el('view-dashboard').classList.add('hidden'); el('view-contractors').classList.add('hidden'); el('view-users').classList.add('hidden');
+            el('view-dashboard').classList.add('hidden');
+            el('view-users').classList.add('hidden');
         };
 
         window.toggleTheme = () => {
@@ -965,38 +881,57 @@
             const isDark = html.classList.toggle('dark-theme');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             
+            // Update icons across the UI
             const desktopIcon = el('desktopThemeIcon');
             const mobileIcon = el('mobileThemeIcon');
             
             if (isDark) {
                 if(desktopIcon) desktopIcon.className = 'fa-solid fa-sun';
-                if(mobileIcon) mobileIcon.className = 'fa-solid fa-sun text-xl';
+                if(mobileIcon) mobileIcon.className = 'fa-solid fa-sun text-lg';
             } else {
                 if(desktopIcon) desktopIcon.className = 'fa-solid fa-moon';
-                if(mobileIcon) mobileIcon.className = 'fa-solid fa-moon text-xl';
+                if(mobileIcon) mobileIcon.className = 'fa-solid fa-moon text-lg';
             }
         };
 
-        window.switchView = (viewName) => {
-            const inactiveClass = 'w-full flex items-center gap-3 px-4 py-3 themed-muted themed-hover rounded-lg font-medium transition-colors text-left';
-            el('navDashboard').className = inactiveClass; el('navContractors').className = inactiveClass;
-            if(currentUserInfo?.role === 'admin') el('navUsers').className = inactiveClass;
-            
-            el('mobileNavDashboard').className = 'themed-muted flex flex-col items-center';
-            el('mobileNavContractors').className = 'themed-muted flex flex-col items-center';
+        // Initialize correct icon on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (document.documentElement.classList.contains('dark-theme')) {
+                const desktopIcon = el('desktopThemeIcon');
+                const mobileIcon = el('mobileThemeIcon');
+                if(desktopIcon) desktopIcon.className = 'fa-solid fa-sun';
+                if(mobileIcon) mobileIcon.className = 'fa-solid fa-sun text-lg';
+            }
+        });
 
-            el('view-dashboard').classList.add('hidden'); el('view-contractors').classList.add('hidden'); el('view-users').classList.add('hidden');
+        window.switchView = (viewName) => {
+            el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left';
+            if(currentUserInfo?.role === 'admin') el('navUsers').className = 'w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors text-left';
+            
+            // Reset mobile nav icons
+            el('mobileNavDashboard').className = 'text-gray-400';
+            el('mobileNavContractors').className = 'text-gray-400';
+            if(currentUserInfo?.role === 'admin') el('mobileNavUsers').className = 'hidden text-gray-400';
+            else el('mobileNavUsers').className = 'hidden text-gray-400';
+
+            el('view-dashboard').classList.add('hidden');
+            el('view-contractors').classList.add('hidden');
+            el('view-users').classList.add('hidden');
 
             if (viewName === 'dashboard') {
-                el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 bg-blue-500/10 text-blue-500 rounded-lg font-medium transition-colors text-left border border-blue-500/10';
-                el('mobileNavDashboard').className = 'text-blue-500 flex flex-col items-center';
+                el('navDashboard').className = 'w-full flex items-center gap-3 px-4 py-3 bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors text-left';
+                el('mobileNavDashboard').className = 'text-primary-600';
                 el('view-dashboard').classList.remove('hidden');
             } else if (viewName === 'contractors') {
-                el('navContractors').className = 'w-full flex items-center gap-3 px-4 py-3 bg-amber-500/10 text-amber-600 rounded-lg font-medium transition-colors text-left border border-amber-500/10';
-                el('mobileNavContractors').className = 'text-amber-500 flex flex-col items-center';
+                el('navContractors').className = 'w-full flex items-center gap-3 px-4 py-3 bg-amber-50 text-amber-700 rounded-lg font-medium transition-colors text-left';
+                el('mobileNavContractors').className = 'text-amber-600';
                 el('view-contractors').classList.remove('hidden');
             } else if (viewName === 'users' && currentUserInfo?.role === 'admin') {
-                el('navUsers').className = 'w-full flex items-center gap-3 px-4 py-3 bg-blue-500/10 text-blue-500 rounded-lg font-medium transition-colors text-left border border-blue-500/10';
+                el('navUsers').className = 'w-full flex items-center gap-3 px-4 py-3 bg-primary-50 text-primary-700 rounded-lg font-medium transition-colors text-left';
+                if(el('mobileNavUsers')) {
+                    el('mobileNavUsers').className = 'text-primary-600';
+                    el('mobileNavUsers').classList.remove('hidden');
+                }
                 el('view-users').classList.remove('hidden');
             }
         };
@@ -1007,38 +942,60 @@
             
             unsubscribePackages = onSnapshot(packagesRef, (snapshot) => {
                 packagesData = [];
-                snapshot.forEach((doc) => packagesData.push({ id: doc.id, ...doc.data() }));
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    packagesData.push({ id: doc.id, ...data });
+                });
                 renderPackages();
                 el('tableLoading').classList.add('hidden');
-            }, (error) => { showToast("Error syncing package data.", "error"); });
+            }, (error) => {
+                console.error("Packages Subscription Error: ", error);
+                showToast("Error syncing package data.", "error");
+            });
         }
 
         window.renderPackages = () => {
-            const tbody = el('packageTableBody'); const emptyState = el('emptyState');
-            const searchTerm = el('searchInput').value.toLowerCase(); const statusFilter = el('filterStatus').value;
+            const tbody = el('packageTableBody');
+            const emptyState = el('emptyState');
+            const searchTerm = el('searchInput').value.toLowerCase();
+            const statusFilter = el('filterStatus').value;
 
             tbody.innerHTML = '';
+
             let filtered = packagesData.filter(pkg => {
-                const searchMatch = (pkg.residentName || "").toLowerCase().includes(searchTerm) || (pkg.trackingNumber || "").toLowerCase().includes(searchTerm);
+                const searchMatch = (pkg.residentName || "").toLowerCase().includes(searchTerm) || 
+                                    (pkg.trackingNumber || "").toLowerCase().includes(searchTerm);
                 const statusMatch = statusFilter === 'all' || pkg.status === statusFilter;
                 return searchMatch && statusMatch;
             });
+
             filtered.sort((a, b) => {
                 if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
                 return new Date(b.receiveDate || 0) - new Date(a.receiveDate || 0);
             });
+
             updateStats();
 
             if (filtered.length === 0) {
-                tbody.parentElement.parentElement.classList.add('hidden'); emptyState.classList.remove('hidden'); emptyState.classList.add('flex');
+                tbody.parentElement.parentElement.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
             } else {
-                tbody.parentElement.parentElement.classList.remove('hidden'); emptyState.classList.add('hidden'); emptyState.classList.remove('flex');
+                tbody.parentElement.parentElement.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
                 filtered.forEach(pkg => {
-                    const tr = document.createElement('tr'); tr.className = 'themed-hover transition-colors border-b themed-border last:border-0 themed-panel';
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 group bg-white';
                     
                     let statusHtml = pkg.status === 'pending' 
-                        ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20"><span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> Awaiting Pickup</span>`
-                        : `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-600 border border-green-500/20"><i class="fa-solid fa-check mr-1"></i> Delivered</span>`;
+                        ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> Awaiting Pickup
+                           </span>`
+                        : `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                            <i class="fa-solid fa-check mr-1"></i> Delivered
+                           </span>`;
 
                     let icon = 'fa-box';
                     if(pkg.type === 'Envelope') icon = 'fa-envelope';
@@ -1048,18 +1005,41 @@
                     const receivedStr = new Date(pkg.receiveDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     const delivStr = pkg.deliveredDate ? new Date(pkg.deliveredDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
-                    const staffHtml = `<div class="text-xs themed-muted"><span class="block"><b class="themed-text">In:</b> ${pkg.loggedBy || 'System'}</span>${pkg.status === 'delivered' ? `<span class="block mt-1"><b class="themed-text">Out:</b> ${pkg.deliveredBy || 'System'}</span>` : ''}</div>`;
-                    const delBtn = currentUserInfo?.role === 'admin' ? `<button onclick="openDeleteModal('${pkg.id}', 'package')" class="themed-muted hover:text-red-500 transition-colors p-2 rounded hover:bg-black/5" title="Delete Record"><i class="fa-solid fa-trash"></i></button>` : '';
+                    const staffHtml = `
+                        <div class="text-xs text-gray-600">
+                            <span class="block"><b class="text-gray-800">Logged:</b> ${pkg.loggedBy || 'System'}</span>
+                            ${pkg.status === 'delivered' ? `<span class="block mt-1"><b class="text-gray-800">Released:</b> ${pkg.deliveredBy || 'System'}</span>` : ''}
+                        </div>
+                    `;
+
+                    const delBtn = currentUserInfo?.role === 'admin' ? 
+                        `<button onclick="openDeleteModal('${pkg.id}', 'package')" class="text-gray-400 hover:text-red-600 transition-colors p-2 rounded hover:bg-red-50" title="Delete Record"><i class="fa-solid fa-trash"></i></button>` : '';
 
                     let actionsHtml = pkg.status === 'pending'
-                        ? `<div class="flex items-center justify-end gap-2">${delBtn}<button onclick="openDeliverModal('${pkg.id}')" class="themed-input border themed-text hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/30 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm">Hand Off</button></div>`
-                        : `<div class="flex items-center justify-end gap-2 text-right">${delBtn}<div><span class="text-xs font-medium themed-text block">To: ${pkg.pickedUpBy}</span><span class="text-xs themed-muted block">${delivStr}</span></div></div>`;
+                        ? `<div class="flex items-center justify-end gap-2">
+                             ${delBtn}
+                             <button onclick="openDeliverModal('${pkg.id}')" class="bg-white border border-gray-300 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-300 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm">
+                               Hand Off
+                             </button>
+                           </div>`
+                        : `<div class="flex items-center justify-end gap-2 text-right">
+                             ${delBtn}
+                             <div>
+                                <span class="text-xs font-medium text-gray-900 block">By: ${pkg.pickedUpBy}</span>
+                                <span class="text-xs text-gray-500 block">${delivStr}</span>
+                             </div>
+                           </div>`;
 
                     tr.innerHTML = `
-                        <td class="px-6 py-4 font-semibold themed-text">${pkg.residentName}</td>
-                        <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-black/5 flex items-center justify-center themed-muted shadow-inner border themed-border"><i class="fa-solid ${icon} text-sm"></i></div><div><div class="text-sm font-bold themed-text">${pkg.carrier}</div><div class="text-xs themed-muted font-medium">${pkg.type}</div></div></div></td>
-                        <td class="px-6 py-4">${pkg.trackingNumber ? `<span class="font-mono text-xs font-bold bg-black/5 px-2 py-1 rounded border themed-border themed-text">${pkg.trackingNumber}</span>` : `<span class="themed-muted italic text-xs">N/A</span>`}</td>
-                        <td class="px-6 py-4 text-sm themed-muted font-medium">${receivedStr}</td>
+                        <td class="px-6 py-4 font-semibold text-gray-900">${pkg.residentName}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-500 shadow-inner"><i class="fa-solid ${icon} text-sm"></i></div>
+                                <div><div class="text-sm font-bold text-gray-900">${pkg.carrier}</div><div class="text-xs text-gray-500 font-medium">${pkg.type}</div></div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">${pkg.trackingNumber ? `<span class="font-mono text-xs font-bold bg-gray-100 px-2 py-1 rounded border border-gray-200 text-gray-700">${pkg.trackingNumber}</span>` : `<span class="text-gray-400 italic text-xs">N/A</span>`}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 font-medium">${receivedStr}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${statusHtml}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${staffHtml}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right">${actionsHtml}</td>
@@ -1074,452 +1054,688 @@
         function updateStats() {
             const today = new Date().toDateString();
             let total = 0, pending = 0, delivered = 0;
+
             packagesData.forEach(p => {
                 if (p.receiveDate && new Date(p.receiveDate).toDateString() === today) total++;
                 if (p.status === 'pending') pending++;
                 if (p.status === 'delivered' && p.deliveredDate && new Date(p.deliveredDate).toDateString() === today) delivered++;
             });
-            el('stat-total').textContent = total; el('stat-pending').textContent = pending; el('stat-delivered').textContent = delivered;
+
+            el('stat-total').textContent = total;
+            el('stat-pending').textContent = pending;
+            el('stat-delivered').textContent = delivered;
         }
 
-        window.openLogModal = () => {
-            el('logPackageForm').reset();
-            const now = new Date();
-            el('receiveDateDisplay').value = now.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); 
-            el('receiveDate').value = now.toISOString(); 
-            el('logPackageModal').classList.remove('hidden');
-            setTimeout(() => el('logModalContent').classList.remove('scale-95'), 10);
-        };
-
-        window.closeLogModal = () => {
-            stopPackageScanner();
-            el('logModalContent').classList.add('scale-95');
-            setTimeout(() => el('logPackageModal').classList.add('hidden'), 200);
-        };
-
-        window.handleLogPackage = async (e) => {
-            e.preventDefault();
-            const btn = el('savePackageBtn'); const orig = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; btn.disabled = true;
-
-            const pkg = {
-                residentName: el('residentName').value, carrier: el('carrier').value, type: el('packageType').value,
-                trackingNumber: el('trackingNumber').value.toUpperCase(), receiveDate: el('receiveDate').value,
-                status: 'pending', deliveredDate: null, pickedUpBy: null, loggedBy: currentUserInfo.name, timestamp: serverTimestamp()
-            };
-
-            try {
-                await addDoc(collection(db, 'system', appId, 'packages'), pkg);
-                showToast('Package securely logged!', 'success'); closeLogModal();
-            } catch (err) { showToast("Failed to save record.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
-        };
-
-        // -> Hardware Package Barcode Scanner (Using HTML5-QRCode)
-        window.startPackageBarcodeScanner = async () => {
-            stopPackageScanner(); // ensure clean slate
-            el('packageScannerContainer').classList.remove('hidden');
-            el('packageBarcodeReader').classList.remove('hidden');
-            el('scannerOverlay').classList.remove('hidden');
-            
-            html5QrCode_Package = new Html5Qrcode("packageBarcodeReader");
-            try {
-                await html5QrCode_Package.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 100 } },
-                    (decodedText, decodedResult) => {
-                        html5QrCode_Package.stop();
-                        el('packageScannerContainer').classList.add('hidden');
-                        el('packageBarcodeReader').classList.add('hidden');
-                        el('scannerOverlay').classList.add('hidden');
-                        
-                        const tracking = decodedText.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                        el('trackingNumber').value = tracking;
-                        
-                        // Carrier Auto-Detect Logic
-                        if (/^1Z[0-9A-Z]{16}$/i.test(tracking)) el('carrier').value = 'UPS';
-                        else if (/^TBA[0-9]{12,15}$/i.test(tracking)) el('carrier').value = 'Amazon';
-                        else if (/^[0-9]{12,15}$/.test(tracking)) el('carrier').value = 'FedEx';
-                        else if (/^(9[0-9]{21}|[A-Z]{2}[0-9]{9}[A-Z]{2})$/i.test(tracking)) el('carrier').value = 'USPS';
-                        
-                        showToast("Barcode Scanned Successfully!", "success");
-                    }
-                );
-            } catch (err) {
-                showToast("Cannot access camera for barcode.", "error");
-                el('packageScannerContainer').classList.add('hidden');
-            }
-        };
-
-        // -> AI OCR Name Scanner (Using Tesseract)
-        window.startPackageOCRScanner = async () => {
-            stopPackageScanner(); 
-            el('packageScannerContainer').classList.remove('hidden');
-            el('packageOCRVideo').classList.remove('hidden');
-            el('scannerOverlay').classList.remove('hidden');
-            el('btnCaptureOCR').classList.remove('hidden');
-            
-            try {
-                packageOCRVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                el('packageOCRVideo').srcObject = packageOCRVideoStream;
-            } catch (err) {
-                showToast("Camera access denied.", "error");
-                el('packageScannerContainer').classList.add('hidden');
-            }
-        };
-
-        window.capturePackageLabelOCR = async () => {
-            const video = el('packageOCRVideo'); const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            
-            const ctx = canvas.getContext('2d');
-            // AI High-Contrast Filter
-            ctx.filter = 'grayscale(100%) contrast(200%)';
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            el('scannerLoading').classList.remove('hidden');
-            el('scannerLoadingText').textContent = "Extracting Name with AI...";
-            const imgData = canvas.toDataURL('image/jpeg', 0.9);
-            
-            try {
-                const worker = await Tesseract.createWorker("eng");
-                const ret = await worker.recognize(imgData);
-                const text = ret.data.text;
-                await worker.terminate();
-                
-                parseOCRName(text);
-                stopPackageScanner();
-            } catch (err) {
-                showToast("Failed to read text.", "error");
-                el('scannerLoading').classList.add('hidden');
-            }
-        };
-
-        function parseOCRName(text) {
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-            let name = "";
-            
-            for (let i = 0; i < lines.length; i++) {
-                const upperLine = lines[i].toUpperCase();
-                if (upperLine.includes('SHIP TO') || upperLine.includes('TO:') || upperLine.startsWith('TO ')) {
-                    let inlineName = upperLine.replace(/^(SHIP )?TO:?\s*/, '').trim();
-                    if (inlineName.length > 3 && !/\d/.test(inlineName)) { name = inlineName; break; }
-                    if (i + 1 < lines.length && !/\d/.test(lines[i + 1].trim())) { name = lines[i + 1].trim(); break; }
-                }
-            }
-            if (!name) {
-                const excludes = ['TRACKING', 'USPS', 'UPS', 'FEDEX', 'AMAZON', 'PRIORITY', 'MAIL', 'GROUND', 'SHIP', 'LBS', 'WEIGHT', 'PKG', 'BOX'];
-                for (let line of lines) {
-                    let uLine = line.toUpperCase();
-                    if (!excludes.some(w => uLine.includes(w)) && !/\d/.test(line) && line.split(/\s+/).length >= 2 && line.length < 30) {
-                        name = line; break;
-                    }
-                }
-            }
-            
-            if (name) {
-                name = name.toLowerCase().replace(/\b\w/g, s => s.toUpperCase()).replace(/[^a-zA-Z\s-]/g, '').trim();
-                el('residentName').value = name;
-                showToast("Name extracted!", "success");
-            } else {
-                showToast("Couldn't find a clear name. Please type manually.", "error");
-            }
-        }
-
-        window.stopPackageScanner = () => {
-            if (packageOCRVideoStream) { packageOCRVideoStream.getTracks().forEach(t => t.stop()); packageOCRVideoStream = null; }
-            if (html5QrCode_Package) { try { html5QrCode_Package.stop(); } catch(e){} html5QrCode_Package = null; }
-            
-            el('packageScannerContainer').classList.add('hidden');
-            el('packageBarcodeReader').classList.add('hidden');
-            el('packageOCRVideo').classList.add('hidden');
-            el('scannerOverlay').classList.add('hidden');
-            el('scannerLoading').classList.add('hidden');
-            el('btnCaptureOCR').classList.add('hidden');
-        };
-
-        window.openDeliverModal = (id) => {
-            const pkg = packagesData.find(p => p.id === id); if (!pkg) return;
-            el('deliveryPackageId').value = pkg.id; el('deliveryResidentName').textContent = pkg.residentName;
-            el('deliveryCarrierType').innerHTML = `${pkg.carrier} - ${pkg.type} ${pkg.trackingNumber ? `(#${pkg.trackingNumber})` : ''}`;
-            el('pickedUpBy').value = '';
-            el('deliverPackageModal').classList.remove('hidden'); setTimeout(() => el('deliverModalContent').classList.remove('scale-95'), 10);
-        };
-
-        window.closeDeliverModal = () => { el('deliverModalContent').classList.add('scale-95'); setTimeout(() => el('deliverPackageModal').classList.add('hidden'), 200); };
-        window.setPickedUpByResident = () => { const pkg = packagesData.find(p => p.id === el('deliveryPackageId').value); if (pkg) el('pickedUpBy').value = pkg.residentName.split(' - ')[0]; };
-
-        window.handleDeliverPackage = async (e) => {
-            e.preventDefault(); const btn = el('confirmDeliverBtn'); const orig = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; btn.disabled = true;
-            try {
-                await updateDoc(doc(db, 'system', appId, 'packages', el('deliveryPackageId').value), { status: 'delivered', pickedUpBy: el('pickedUpBy').value, deliveredDate: new Date().toISOString(), deliveredBy: currentUserInfo.name });
-                showToast('Delivery completed successfully.', 'success'); closeDeliverModal();
-            } catch (err) { showToast("Failed to process handoff.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
-        };
+        // ==========================================
+        // CONTRACTOR MODULE LOGIC
+        // ==========================================
 
         window.subscribeToContractors = () => {
-            window.unsubscribeContractors = onSnapshot(collection(db, 'system', appId, 'contractors'), (snapshot) => {
-                contractorsData = []; snapshot.forEach(doc => contractorsData.push({ id: doc.id, ...doc.data() })); renderContractors();
+            const ref = collection(db, 'system', appId, 'contractors');
+            window.unsubscribeContractors = onSnapshot(ref, (snapshot) => {
+                contractorsData = [];
+                snapshot.forEach(doc => {
+                    contractorsData.push({ id: doc.id, ...doc.data() });
+                });
+                renderContractors();
+            }, (error) => {
+                console.error("Contractors Sub Error: ", error);
             });
         };
 
         window.renderContractors = () => {
-            const tbody = el('contractorTableBody'); const emptyState = el('contractorEmptyState');
-            const searchTerm = el('searchContractorInput').value.toLowerCase(); const statusFilter = el('filterContractorStatus').value;
+            const tbody = el('contractorTableBody');
+            const emptyState = el('contractorEmptyState');
+            const searchTerm = el('searchContractorInput').value.toLowerCase();
+            const statusFilter = el('filterContractorStatus').value;
 
             tbody.innerHTML = '';
+
             let filtered = contractorsData.filter(c => {
-                const searchMatch = (c.name || "").toLowerCase().includes(searchTerm) || (c.company || "").toLowerCase().includes(searchTerm) || (c.unit || "").toLowerCase().includes(searchTerm);
+                const searchMatch = (c.name || "").toLowerCase().includes(searchTerm) || 
+                                    (c.company || "").toLowerCase().includes(searchTerm) ||
+                                    (c.unit || "").toLowerCase().includes(searchTerm);
                 const statusMatch = statusFilter === 'all' || c.status === statusFilter;
                 return searchMatch && statusMatch;
             });
-            filtered.sort((a, b) => { if (a.status !== b.status) return a.status === 'active' ? -1 : 1; return new Date(b.timeIn || 0) - new Date(a.timeIn || 0); });
 
-            let active = 0, total = 0; const today = new Date().toDateString();
-            contractorsData.forEach(c => { if (c.timeIn && new Date(c.timeIn).toDateString() === today) { total++; if (c.status === 'active') active++; } });
-            el('stat-active-contractors').textContent = active; el('stat-total-contractors').textContent = total;
+            // Sort active first, then by time in
+            filtered.sort((a, b) => {
+                if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
+                return new Date(b.timeIn || 0) - new Date(a.timeIn || 0);
+            });
+
+            // Update stats
+            const today = new Date().toDateString();
+            let active = 0, total = 0;
+            contractorsData.forEach(c => {
+                if (c.timeIn && new Date(c.timeIn).toDateString() === today) {
+                    total++;
+                    if (c.status === 'active') active++;
+                }
+            });
+            el('stat-active-contractors').textContent = active;
+            el('stat-total-contractors').textContent = total;
 
             if (filtered.length === 0) {
-                tbody.parentElement.parentElement.classList.add('hidden'); emptyState.classList.remove('hidden'); emptyState.classList.add('flex');
+                tbody.parentElement.parentElement.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
             } else {
-                tbody.parentElement.parentElement.classList.remove('hidden'); emptyState.classList.add('hidden'); emptyState.classList.remove('flex');
+                tbody.parentElement.parentElement.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
                 filtered.forEach(c => {
-                    const tr = document.createElement('tr'); tr.className = 'themed-hover transition-colors border-b themed-border themed-panel';
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 transition-colors border-b border-gray-100 bg-white';
+                    
                     const timeInStr = new Date(c.timeIn).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    let statusHtml = c.status === 'active' ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20"><span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> On-Site</span>` : `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-black/5 themed-muted border themed-border">Checked Out</span>`;
-                    let iconHtml = c.photoData ? `<img src="${c.photoData}" onclick="openImageModal('${c.photoData}')" class="w-8 h-8 rounded-full object-cover border themed-border shadow-sm cursor-pointer hover:opacity-75 transition-opacity ring-2 ring-transparent hover:ring-amber-500" title="Click to enlarge photo" />` : `<div class="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center themed-muted shadow-inner border themed-border"><i class="fa-solid fa-user text-xs"></i></div>`;
-                    let actionsHtml = c.status === 'active' ? `<div class="flex items-center justify-end gap-2"><button onclick="openCheckoutModal('${c.id}')" class="themed-input border themed-text hover:bg-black/5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm flex items-center gap-1">Checkout <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i></button></div>` : `<span class="text-xs themed-muted">Out: ${new Date(c.timeOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
-                    const delBtn = currentUserInfo?.role === 'admin' ? `<button onclick="openDeleteModal('${c.id}', 'contractor')" class="themed-muted hover:text-red-500 transition-colors p-1.5 rounded hover:bg-black/5 ml-2" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>` : '';
+                    
+                    let statusHtml = c.status === 'active' 
+                        ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full mr-1.5 animate-pulse"></span> On-Site
+                           </span>`
+                        : `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+                            Checked Out
+                           </span>`;
+
+                    let iconHtml = c.photoData 
+                        ? `<img src="${c.photoData}" class="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-sm" />`
+                        : `<div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shadow-inner border border-gray-200"><i class="fa-solid fa-user text-xs"></i></div>`;
+
+                    let actionsHtml = c.status === 'active'
+                        ? `<div class="flex items-center justify-end gap-2">
+                             <button onclick="openCheckoutModal('${c.id}')" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm flex items-center gap-1">
+                               Checkout <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                             </button>
+                           </div>`
+                        : `<span class="text-xs text-gray-500">Out: ${new Date(c.timeOut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+
+                    const delBtn = currentUserInfo?.role === 'admin' ? 
+                        `<button onclick="openDeleteModal('${c.id}', 'contractor')" class="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50 ml-2" title="Delete Record"><i class="fa-solid fa-trash text-xs"></i></button>` : '';
 
                     tr.innerHTML = `
-                        <td class="px-6 py-3"><div class="flex items-center gap-3">${iconHtml}<div><div class="font-semibold themed-text">${c.name}</div><div class="text-xs themed-muted">${c.phone || 'No phone'}</div></div></div></td>
-                        <td class="px-6 py-3"><div class="text-sm font-medium themed-text">${c.serviceType}</div><div class="text-xs themed-muted">${c.company || 'Independant'}</div></td>
-                        <td class="px-6 py-3"><span class="font-bold themed-text">Unit ${c.unit}</span>${c.resident ? `<div class="text-xs themed-muted">For: ${c.resident}</div>` : ''}</td>
-                        <td class="px-6 py-3 text-sm themed-muted font-medium">${timeInStr}</td>
+                        <td class="px-6 py-3">
+                            <div class="flex items-center gap-3">
+                                ${iconHtml}
+                                <div><div class="font-semibold text-gray-900">${c.name}</div>
+                                <div class="text-xs text-gray-500">${c.phone || 'No phone'}</div></div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <div class="text-sm font-medium text-gray-900">${c.serviceType}</div>
+                            <div class="text-xs text-gray-500">${c.company || 'Independant'}</div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <span class="font-bold text-gray-900">Unit ${c.unit}</span>
+                            ${c.resident ? `<div class="text-xs text-gray-500">For: ${c.resident}</div>` : ''}
+                        </td>
+                        <td class="px-6 py-3 text-sm text-gray-600 font-medium">${timeInStr}</td>
                         <td class="px-6 py-3 whitespace-nowrap">${statusHtml}</td>
-                        <td class="px-6 py-3 whitespace-nowrap text-right"><div class="flex items-center justify-end">${actionsHtml} ${delBtn}</div></td>
+                        <td class="px-6 py-3 whitespace-nowrap text-right">
+                            <div class="flex items-center justify-end">
+                                ${actionsHtml} ${delBtn}
+                            </div>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
             }
         };
 
-        // -> DL PDF417 Barcode Scanner
-        window.startDLScanner = async () => {
-            el('dlScannerContainer').classList.remove('hidden');
-            html5QrCode_DL = new Html5Qrcode("dlBarcodeReader");
-            try {
-                await html5QrCode_DL.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 300, height: 150 } },
-                    (decodedText) => {
-                        // Successfully scanned AAMVA Barcode
-                        stopDLScanner();
-                        
-                        const name = parseAAMVA(decodedText);
-                        if(name) {
-                            el('contractorName').value = name;
-                            showToast("ID Scanned! Now take a photo.", "success");
-                            // Auto open front-facing photo camera
-                            startCamera(null);
-                        } else {
-                            showToast("Couldn't read ID format.", "error");
-                        }
-                    }
-                );
-            } catch(e) {
-                showToast("Camera error for DL Scanner.", "error");
-                el('dlScannerContainer').classList.add('hidden');
-            }
-        };
+        window.filterContractors = () => renderContractors();
 
-        window.stopDLScanner = () => {
-            if (html5QrCode_DL) { try { html5QrCode_DL.stop(); } catch(e){} html5QrCode_DL = null; }
-            el('dlScannerContainer').classList.add('hidden');
-        };
-
-        // NEW: Function to handle scanning from a manually taken photo
-        window.handleDLFileScan = async (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-            
-            el('dlScannerLoading').classList.remove('hidden');
-            
-            if(!html5QrCode_DL) {
-                html5QrCode_DL = new Html5Qrcode("dlBarcodeReader");
-            }
-            
-            try {
-                // Scan the static image file instead of live video
-                const decodedText = await html5QrCode_DL.scanFile(file, true);
-                
-                stopDLScanner();
-                const name = parseAAMVA(decodedText);
-                
-                if(name) {
-                    el('contractorName').value = name;
-                    showToast("ID Scanned! Now take a photo.", "success");
-                    startCamera(null);
-                } else {
-                    showToast("Couldn't read ID format.", "error");
-                }
-            } catch (err) {
-                console.error(err);
-                showToast("No barcode found in that image. Please try again.", "error");
-            } finally {
-                el('dlScannerLoading').classList.add('hidden');
-                e.target.value = ''; // Reset input
-            }
-        };
-
-        function parseAAMVA(text) {
-            const cleanText = text.replace(/\r/g, '\n');
-            const lines = cleanText.split('\n');
-            let first = '', last = '';
-            
-            for (let line of lines) {
-                if (line.startsWith('DAC')) first = line.substring(3).trim();
-                else if (line.indexOf('DAC') > 0) first = line.substring(line.indexOf('DAC')+3).trim(); 
-                
-                if (line.startsWith('DCS')) last = line.substring(3).trim();
-                else if (line.indexOf('DCS') > 0) last = line.substring(line.indexOf('DCS')+3).trim();
-            }
-            
-            if(!first && !last) return null;
-            const titleCase = (str) => str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
-            return `${titleCase(first)} ${titleCase(last)}`.trim();
-        }
-
-        // -> Photo Camera for Contractor Face
+        // CAMERA LOGIC
         window.startCamera = async (e) => {
             if(e) e.preventDefault();
-            el('cameraPrompt').classList.add('hidden'); el('capturedPhoto').classList.add('hidden');
+            el('cameraPrompt').classList.add('hidden');
+            el('capturedPhoto').classList.add('hidden');
             el('cameraVideo').classList.remove('hidden');
-            el('btnCapture').disabled = false; el('btnCapture').classList.remove('hidden'); el('btnRetake').classList.add('hidden');
+            el('btnCapture').disabled = false;
+            el('btnCapture').classList.remove('hidden');
+            el('btnRetake').classList.add('hidden');
             capturedImageBase64 = null;
+
             try {
-                // CHANGED: 'user' (front camera) changed to 'environment' (back camera)
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); 
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 el('cameraVideo').srcObject = videoStream;
             } catch (err) {
-                showToast("Camera permissions required.", "error");
-                el('cameraPrompt').classList.remove('hidden'); el('cameraVideo').classList.add('hidden'); el('btnCapture').disabled = true;
+                console.error("Camera access denied or unavailable", err);
+                showToast("Could not access camera. Please allow permissions.", "error");
+                el('cameraPrompt').classList.remove('hidden');
+                el('cameraVideo').classList.add('hidden');
+                el('btnCapture').disabled = true;
             }
         };
 
         window.capturePhoto = (e) => {
             if(e) e.preventDefault();
-            const video = el('cameraVideo'); const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 480; let width = video.videoWidth || 480; let height = video.videoHeight || 480;
-            if (width > MAX_WIDTH) { height = Math.floor(height * (MAX_WIDTH / width)); width = MAX_WIDTH; }
-            canvas.width = width; canvas.height = height;
-            canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+            const video = el('cameraVideo');
+            const canvas = document.createElement('canvas');
             
+            // Limit resolution to prevent browser memory crash on high-end devices
+            const MAX_WIDTH = 640;
+            let width = video.videoWidth || 640;
+            let height = video.videoHeight || 480;
+
+            if (width > MAX_WIDTH) {
+                height = Math.floor(height * (MAX_WIDTH / width));
+                width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, width, height);
+            
+            // Compress to base64 jpeg
             capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
-            el('cameraVideo').classList.add('hidden'); el('capturedPhoto').src = capturedImageBase64; el('capturedPhoto').classList.remove('hidden');
-            el('btnCapture').classList.add('hidden'); el('btnRetake').classList.remove('hidden');
+            
+            el('cameraVideo').classList.add('hidden');
+            el('capturedPhoto').src = capturedImageBase64;
+            el('capturedPhoto').classList.remove('hidden');
+            
+            el('btnCapture').classList.add('hidden');
+            el('btnRetake').classList.remove('hidden');
+            
             stopCamera();
         };
 
-        window.stopCamera = () => { if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; } };
-
-        window.openImageModal = (src) => { el('lightboxImage').src = src; el('imageLightboxModal').classList.remove('hidden'); };
-        window.closeImageModal = () => { el('imageLightboxModal').classList.add('hidden'); setTimeout(() => { el('lightboxImage').src = ''; }, 300); };
-
-        window.openContractorModal = () => {
-            el('logContractorForm').reset();
-            el('cameraPrompt').classList.remove('hidden'); el('cameraVideo').classList.add('hidden'); el('capturedPhoto').classList.add('hidden');
-            el('btnCapture').disabled = true; el('btnCapture').classList.remove('hidden'); el('btnRetake').classList.add('hidden');
-            capturedImageBase64 = null;
-            el('logContractorModal').classList.remove('hidden'); setTimeout(() => el('logContractorContent').classList.remove('scale-95'), 10);
-        };
-        window.closeContractorModal = () => { stopCamera(); stopDLScanner(); el('logContractorContent').classList.add('scale-95'); setTimeout(() => el('logContractorModal').classList.add('hidden'), 200); };
-
-        window.handleLogContractor = async (e) => {
-            e.preventDefault(); const btn = el('saveContractorBtn'); const orig = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; btn.disabled = true;
-            const contractor = {
-                unit: el('contractorUnit').value.toUpperCase(), resident: el('contractorResident').value, name: el('contractorName').value, company: el('contractorCompany').value,
-                phone: el('contractorPhone').value, serviceType: el('contractorServiceType').value, photoData: capturedImageBase64, status: 'active',
-                timeIn: new Date().toISOString(), timeOut: null, loggedBy: currentUserInfo.name
-            };
-            try { await addDoc(collection(db, 'system', appId, 'contractors'), contractor); showToast('Contractor logged successfully!', 'success'); closeContractorModal(); } 
-            catch (err) { showToast("Failed to save record.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        window.stopCamera = () => {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
         };
 
-        window.openCheckoutModal = (id) => {
-            const c = contractorsData.find(x => x.id === id); if(!c) return;
-            el('checkoutContractorId').value = c.id; el('checkoutName').textContent = c.name; el('checkoutCompany').textContent = c.company || c.serviceType;
-            if(c.photoData) { el('checkoutPhoto').src = c.photoData; el('checkoutPhoto').classList.remove('hidden'); el('checkoutNoPhoto').classList.add('hidden'); } 
-            else { el('checkoutPhoto').classList.add('hidden'); el('checkoutNoPhoto').classList.remove('hidden'); }
-            el('checkoutContractorModal').classList.remove('hidden'); setTimeout(() => el('checkoutModalContent').classList.remove('scale-95'), 10);
-        };
-        window.closeCheckoutModal = () => { el('checkoutModalContent').classList.add('scale-95'); setTimeout(() => el('checkoutContractorModal').classList.add('hidden'), 200); };
-        window.confirmCheckout = async () => {
-            const btn = el('btnConfirmCheckout'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; btn.disabled = true;
-            try { await updateDoc(doc(db, 'system', appId, 'contractors', el('checkoutContractorId').value), { status: 'checked-out', timeOut: new Date().toISOString(), checkedOutBy: currentUserInfo.name }); showToast('Contractor checked out.', 'success'); closeCheckoutModal(); } 
-            catch (err) { showToast("Failed to checkout.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        // ==========================================
+        // AI PACKAGE SCANNER LOGIC (TESSERACT)
+        // ==========================================
+        
+        window.startPackageScanner = async () => {
+            el('packageScannerContainer').classList.remove('hidden');
+            el('scannerLoading').classList.add('hidden');
+            try {
+                // Ensure packageVideoStream variable is declared at the top of your script block: let packageVideoStream = null;
+                packageVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                el('packageScannerVideo').srcObject = packageVideoStream;
+            } catch (err) {
+                showToast("Camera access denied.", "error");
+                el('packageScannerContainer').classList.add('hidden');
+            }
         };
 
+        window.stopPackageScanner = () => {
+            if (packageVideoStream) {
+                packageVideoStream.getTracks().forEach(track => track.stop());
+                packageVideoStream = null;
+            }
+            el('packageScannerContainer').classList.add('hidden');
+        };
+
+        window.capturePackageLabel = async () => {
+            const video = el('packageScannerVideo');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            el('scannerLoading').classList.remove('hidden');
+            const imgData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            try {
+                // Initialize Tesseract worker directly using CDN
+                const worker = await Tesseract.createWorker("eng");
+                const ret = await worker.recognize(imgData);
+                const text = ret.data.text;
+                await worker.terminate();
+                
+                parseScannedLabel(text);
+                stopPackageScanner();
+            } catch (err) {
+                console.error("OCR Error:", err);
+                showToast("Failed to read label text.", "error");
+                el('scannerLoading').classList.add('hidden');
+            }
+        };
+
+        function parseScannedLabel(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+            let tracking = "";
+            let name = "";
+            
+            // Regex matchers for common tracking formats
+            const upsMatch = text.match(/\b(1Z[0-9A-Z]{16})\b/i);
+            const numMatch = text.match(/\b(\d{12,22})\b/);
+            const amzMatch = text.match(/\b(TBA\d{12})\b/i);
+            
+            if (upsMatch) tracking = upsMatch[1];
+            else if (amzMatch) tracking = amzMatch[1];
+            else if (numMatch) tracking = numMatch[1];
+            
+            if (tracking) {
+                el('trackingNumber').value = tracking.toUpperCase();
+                // Auto-select carrier
+                if(upsMatch) el('carrier').value = "UPS";
+                else if(amzMatch) el('carrier').value = "Amazon";
+                else if(tracking.length >= 20) el('carrier').value = "USPS";
+                else if(tracking.length === 12 || tracking.length === 15) el('carrier').value = "FedEx";
+            }
+            
+            // Basic Name Extraction (Looks for non-number lines)
+            const excludes = ['TRACKING', 'USPS', 'UPS', 'FEDEX', 'AMAZON', 'PRIORITY', 'MAIL', 'GROUND', 'SHIP', 'TO:'];
+            for (let line of lines) {
+                let uLine = line.toUpperCase();
+                let isJunk = excludes.some(w => uLine.includes(w)) || /\d/.test(line); 
+                if (!isJunk && line.split(' ').length >= 2 && line.length < 30) {
+                    name = line;
+                    break;
+                }
+            }
+            
+            if (name) el('residentName').value = name;
+            
+            if (tracking || name) {
+                showToast("Label scanned and parsed!", "success");
+            } else {
+                showToast("Couldn't find clear tracking data. Try again.", "error");
+            }
+        }
+
+        // DYMO INTEGRATION
         window.printDymoLabel = () => {
-            const name = el('contractorName').value; const unit = el('contractorUnit').value;
-            if(!name || !unit) { showToast("Name and Unit are required to print a badge.", "error"); return; }
-            const btn = el('btnDymo'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
+            const name = el('contractorName').value;
+            const company = el('contractorCompany').value;
+            const unit = el('contractorUnit').value;
+            
+            if(!name || !unit) {
+                showToast("Name and Unit are required to print a badge.", "error");
+                return;
+            }
+
+            const btn = el('btnDymo');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Printer...';
+            
+            // This is a simulated implementation of the DYMO Label Framework.
+            // In a real environment, the DYMO Connect Software must be running locally.
             setTimeout(() => {
                 try {
-                    if (typeof dymo === 'undefined' || !dymo.label || !dymo.label.framework) { showToast("DYMO Service not detected. Simulated success.", "info"); } 
-                    else { const printers = dymo.label.framework.getPrinters(); if (printers.length === 0) throw "No printers"; showToast(`Badge sent to ${printers[0].name}`, "success"); }
-                } catch(e) { showToast("Error communicating with printer.", "error"); } finally { btn.innerHTML = orig; }
+                    // Simulated check for DYMO framework
+                    if (typeof dymo === 'undefined' || !dymo.label || !dymo.label.framework) {
+                        console.warn("DYMO Connect Framework not detected in browser.");
+                        // Generate mock XML for preview
+                        const mockXML = `
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <DieCutLabel Version="8.0" Units="twips">
+                                <PaperOrientation>Landscape</PaperOrientation>
+                                <Id>NameBadge</Id>
+                                <ObjectInfo>
+                                    <TextObject>
+                                        <Name>VISITOR</Name>
+                                        <ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
+                                        <Text>${name.toUpperCase()}</Text>
+                                        <Text>${company}</Text>
+                                        <Text>UNIT: ${unit}</Text>
+                                    </TextObject>
+                                </ObjectInfo>
+                            </DieCutLabel>
+                        `;
+                        
+                        showToast("DYMO Web Service not detected. Badge printing simulated.", "info");
+                    } else {
+                        // Real DYMO API Call structure if framework is present
+                        const printers = dymo.label.framework.getPrinters();
+                        if (printers.length === 0) throw "No printers found";
+                        
+                        const printerName = printers[0].name;
+                        
+                        // Note: Requires a valid .label XML template string loaded here
+                        // label.setObjectText("NameText", name);
+                        // label.print(printerName);
+                        showToast(`Badge sent to ${printerName}`, "success");
+                    }
+                } catch(e) {
+                    console.error("DYMO Print Error", e);
+                    showToast("Error communicating with DYMO printer.", "error");
+                } finally {
+                    btn.innerHTML = orig;
+                }
             }, 1000);
         };
 
+        // MODAL HANDLERS
+        window.openContractorModal = () => {
+            el('logContractorForm').reset();
+            
+            el('cameraPrompt').classList.remove('hidden');
+            el('cameraVideo').classList.add('hidden');
+            el('capturedPhoto').classList.add('hidden');
+            el('btnCapture').disabled = true;
+            el('btnCapture').classList.remove('hidden');
+            el('btnRetake').classList.add('hidden');
+            capturedImageBase64 = null;
+            
+            el('logContractorModal').classList.remove('hidden');
+            setTimeout(() => el('logContractorContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeContractorModal = () => {
+            stopCamera();
+            el('logContractorContent').classList.add('scale-95');
+            setTimeout(() => el('logContractorModal').classList.add('hidden'), 200);
+        };
+
+        window.handleLogContractor = async (e) => {
+            e.preventDefault();
+            const btn = el('saveContractorBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const contractor = {
+                unit: el('contractorUnit').value.toUpperCase(),
+                resident: el('contractorResident').value,
+                name: el('contractorName').value,
+                company: el('contractorCompany').value,
+                phone: el('contractorPhone').value,
+                serviceType: el('contractorServiceType').value,
+                photoData: capturedImageBase64, // Saves the base64 string
+                status: 'active',
+                timeIn: new Date().toISOString(),
+                timeOut: null,
+                loggedBy: currentUserInfo.name
+            };
+
+            try {
+                await addDoc(collection(db, 'system', appId, 'contractors'), contractor);
+                showToast('Contractor logged successfully!', 'success');
+                closeContractorModal();
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to save record. File might be too large.", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
+        window.openCheckoutModal = (id) => {
+            const c = contractorsData.find(x => x.id === id);
+            if(!c) return;
+
+            el('checkoutContractorId').value = c.id;
+            el('checkoutName').textContent = c.name;
+            el('checkoutCompany').textContent = c.company || c.serviceType;
+            
+            if(c.photoData) {
+                el('checkoutPhoto').src = c.photoData;
+                el('checkoutPhoto').classList.remove('hidden');
+                el('checkoutNoPhoto').classList.add('hidden');
+            } else {
+                el('checkoutPhoto').classList.add('hidden');
+                el('checkoutNoPhoto').classList.remove('hidden');
+            }
+
+            el('checkoutContractorModal').classList.remove('hidden');
+            setTimeout(() => el('checkoutModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeCheckoutModal = () => {
+            el('checkoutModalContent').classList.add('scale-95');
+            setTimeout(() => el('checkoutContractorModal').classList.add('hidden'), 200);
+        };
+
+        window.confirmCheckout = async () => {
+            const btn = el('btnConfirmCheckout');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const id = el('checkoutContractorId').value;
+                const ref = doc(db, 'system', appId, 'contractors', id);
+                await updateDoc(ref, {
+                    status: 'checked-out',
+                    timeOut: new Date().toISOString(),
+                    checkedOutBy: currentUserInfo.name
+                });
+                showToast('Contractor checked out.', 'success');
+                closeCheckoutModal();
+            } catch (err) {
+                showToast("Failed to checkout.", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
+
+        window.openLogModal = () => {
+            el('logPackageForm').reset();
+            
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            el('receiveDateDisplay').value = timeString; 
+            el('receiveDate').value = now.toISOString(); 
+            
+            el('logPackageModal').classList.remove('hidden');
+            setTimeout(() => el('logModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeLogModal = () => {
+            stopPackageScanner(); // Ensure camera turns off if modal closed
+            el('logModalContent').classList.add('scale-95');
+            setTimeout(() => el('logPackageModal').classList.add('hidden'), 200);
+        };
+
+        window.handleLogPackage = async (e) => {
+            e.preventDefault();
+            const btn = el('savePackageBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const pkg = {
+                residentName: el('residentName').value,
+                carrier: el('carrier').value,
+                type: el('packageType').value,
+                trackingNumber: el('trackingNumber').value.toUpperCase(),
+                receiveDate: el('receiveDate').value,
+                status: 'pending',
+                deliveredDate: null,
+                pickedUpBy: null,
+                loggedBy: currentUserInfo.name,
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                await addDoc(collection(db, 'system', appId, 'packages'), pkg);
+                showToast('Package securely logged!', 'success');
+                closeLogModal();
+            } catch (err) {
+                showToast("Failed to save record.", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
+        window.openDeliverModal = (id) => {
+            const pkg = packagesData.find(p => p.id === id);
+            if (!pkg) return;
+            el('deliveryPackageId').value = pkg.id;
+            el('deliveryResidentName').textContent = pkg.residentName;
+            el('deliveryCarrierType').innerHTML = `${pkg.carrier} - ${pkg.type} ${pkg.trackingNumber ? `(#${pkg.trackingNumber})` : ''}`;
+            el('pickedUpBy').value = '';
+            
+            el('deliverPackageModal').classList.remove('hidden');
+            setTimeout(() => el('deliverModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeDeliverModal = () => {
+            el('deliverModalContent').classList.add('scale-95');
+            setTimeout(() => el('deliverPackageModal').classList.add('hidden'), 200);
+        };
+
+        window.setPickedUpByResident = () => {
+            const id = el('deliveryPackageId').value;
+            const pkg = packagesData.find(p => p.id === id);
+            if (pkg) el('pickedUpBy').value = pkg.residentName.split(' - ')[0];
+        };
+
+        window.handleDeliverPackage = async (e) => {
+            e.preventDefault();
+            const btn = el('confirmDeliverBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const ref = doc(db, 'system', appId, 'packages', el('deliveryPackageId').value);
+                await updateDoc(ref, {
+                    status: 'delivered',
+                    pickedUpBy: el('pickedUpBy').value,
+                    deliveredDate: new Date().toISOString(),
+                    deliveredBy: currentUserInfo.name
+                });
+                showToast('Delivery completed successfully.', 'success');
+                closeDeliverModal();
+            } catch (err) {
+                showToast("Failed to process handoff.", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        };
+
         function subscribeToUsers() {
-            unsubscribeUsers = onSnapshot(collection(db, 'system', appId, 'users'), (snapshot) => {
-                systemUsersData = []; snapshot.forEach(doc => systemUsersData.push({ id: doc.id, ...doc.data() })); renderUsersTable();
+            const usersRef = collection(db, 'system', appId, 'users');
+            unsubscribeUsers = onSnapshot(usersRef, (snapshot) => {
+                systemUsersData = [];
+                snapshot.forEach(doc => systemUsersData.push({ id: doc.id, ...doc.data() }));
+                renderUsersTable();
             });
         }
 
         function renderUsersTable() {
-            const tbody = el('usersTableBody'); tbody.innerHTML = '';
+            const tbody = el('usersTableBody');
+            tbody.innerHTML = '';
+            
             systemUsersData.forEach(user => {
-                const tr = document.createElement('tr'); tr.className = 'themed-hover themed-panel border-b themed-border last:border-0';
-                let roleBadge = user.role === 'admin' ? '<span class="bg-red-500/10 text-red-500 px-2 py-1 rounded text-xs font-bold border border-red-500/20">Manager (Admin)</span>' : (user.role === 'frontdesk' ? '<span class="bg-blue-500/10 text-blue-500 px-2 py-1 rounded text-xs font-bold border border-blue-500/20">Front Desk</span>' : '<span class="bg-amber-500/10 text-amber-600 px-2 py-1 rounded text-xs font-bold border border-amber-500/20">Receiving</span>');
-                const delBtn = user.id === currentUserInfo.id ? `<span class="text-xs themed-muted italic">Current User</span>` : `<button onclick="openDeleteModal('${user.id}', 'user')" class="text-red-500 hover:bg-black/5 px-3 py-1 rounded transition-colors text-sm font-semibold border border-transparent hover:border-red-500/20">Revoke Access</button>`;
-                tr.innerHTML = `<td class="px-6 py-4 font-bold themed-text">${user.name}</td><td class="px-6 py-4 font-mono text-sm themed-muted">${user.username}</td><td class="px-6 py-4">${roleBadge}</td><td class="px-6 py-4 text-right">${delBtn}</td>`;
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 bg-white border-b border-gray-100 last:border-0';
+                
+                let roleBadge = '';
+                if(user.role === 'admin') roleBadge = '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-bold border border-red-200">Manager (Admin)</span>';
+                else if(user.role === 'frontdesk') roleBadge = '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold border border-blue-200">Front Desk</span>';
+                else roleBadge = '<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-bold border border-amber-200">Receiving</span>';
+
+                const delBtn = user.id === currentUserInfo.id 
+                    ? `<span class="text-xs text-gray-400 italic">Current User</span>`
+                    : `<button onclick="openDeleteModal('${user.id}', 'user')" class="text-red-500 hover:bg-red-50 px-3 py-1 rounded transition-colors text-sm font-semibold border border-transparent hover:border-red-200">Revoke Access</button>`;
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-bold text-gray-900">${user.name}</td>
+                    <td class="px-6 py-4 font-mono text-sm text-gray-600">${user.username}</td>
+                    <td class="px-6 py-4">${roleBadge}</td>
+                    <td class="px-6 py-4 text-right">${delBtn}</td>
+                `;
                 tbody.appendChild(tr);
             });
         }
 
-        window.openAddUserModal = () => { el('addUserForm').reset(); el('addUserModal').classList.remove('hidden'); setTimeout(() => el('addUserContent').classList.remove('scale-95'), 10); };
-        window.closeAddUserModal = () => { el('addUserContent').classList.add('scale-95'); setTimeout(() => el('addUserModal').classList.add('hidden'), 200); };
-        window.handleAddUser = async (e) => {
-            e.preventDefault(); const btn = el('saveUserBtn'); const orig = btn.innerHTML; btn.innerHTML = 'Saving...'; btn.disabled = true;
-            if (systemUsersData.find(u => u.username.toLowerCase() === el('newUserUsername').value.toLowerCase())) { showToast("Username already taken.", "error"); btn.innerHTML = orig; btn.disabled = false; return; }
-            try { await addDoc(collection(db, 'system', appId, 'users'), { name: el('newUserName').value, username: el('newUserUsername').value, password: el('newUserPassword').value, role: el('newUserRole').value, created: new Date().toISOString() }); showToast("Account created.", "success"); closeAddUserModal(); } 
-            catch (err) { showToast("Failed to create user.", "error"); } finally { btn.innerHTML = orig; btn.disabled = false; }
+        window.openAddUserModal = () => {
+            el('addUserForm').reset();
+            el('addUserModal').classList.remove('hidden');
+            setTimeout(() => el('addUserContent').classList.remove('scale-95'), 10);
+        };
+        window.closeAddUserModal = () => {
+            el('addUserContent').classList.add('scale-95');
+            setTimeout(() => el('addUserModal').classList.add('hidden'), 200);
         };
 
-        window.openDeleteModal = (id, type) => { el('deleteTargetId').value = id; el('deleteTargetType').value = type; el('deletePackageModal').classList.remove('hidden'); setTimeout(() => el('deleteModalContent').classList.remove('scale-95'), 10); };
-        window.closeDeleteModal = () => { el('deleteModalContent').classList.add('scale-95'); setTimeout(() => el('deletePackageModal').classList.add('hidden'), 200); };
+        window.handleAddUser = async (e) => {
+            e.preventDefault();
+            const btn = el('saveUserBtn');
+            const orig = btn.innerHTML;
+            btn.innerHTML = 'Saving...'; btn.disabled = true;
+            
+            const exists = systemUsersData.find(u => u.username.toLowerCase() === el('newUserUsername').value.toLowerCase());
+            if (exists) {
+                showToast("Username already taken.", "error");
+                btn.innerHTML = orig; btn.disabled = false;
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, 'system', appId, 'users'), {
+                    name: el('newUserName').value,
+                    username: el('newUserUsername').value,
+                    password: el('newUserPassword').value, 
+                    role: el('newUserRole').value,
+                    created: new Date().toISOString()
+                });
+                showToast("Staff account created.", "success");
+                closeAddUserModal();
+            } catch (err) {
+                showToast("Failed to create user.", "error");
+            } finally {
+                btn.innerHTML = orig; btn.disabled = false;
+            }
+        };
+
+        window.openDeleteModal = (id, type) => {
+            el('deleteTargetId').value = id;
+            el('deleteTargetType').value = type;
+            el('deletePackageModal').classList.remove('hidden');
+            setTimeout(() => el('deleteModalContent').classList.remove('scale-95'), 10);
+        };
+
+        window.closeDeleteModal = () => {
+            el('deleteModalContent').classList.add('scale-95');
+            setTimeout(() => el('deletePackageModal').classList.add('hidden'), 200);
+        };
+
         window.confirmDeleteAction = async () => {
-            const id = el('deleteTargetId').value; const type = el('deleteTargetType').value;
-            let collName = type === 'user' ? 'users' : type === 'contractor' ? 'contractors' : 'packages';
-            try { await deleteDoc(doc(db, 'system', appId, collName, id)); showToast(`Record deleted.`, "success"); closeDeleteModal(); } 
-            catch (err) { showToast("Deletion failed.", "error"); }
+            const id = el('deleteTargetId').value;
+            const type = el('deleteTargetType').value;
+            let collName = 'packages';
+            if (type === 'user') collName = 'users';
+            if (type === 'contractor') collName = 'contractors'; // NEW
+
+            try {
+                await deleteDoc(doc(db, 'system', appId, collName, id));
+                showToast(`${type === 'package' ? 'Package' : type === 'contractor' ? 'Contractor' : 'User'} deleted permanently.`, "success");
+                closeDeleteModal();
+            } catch (err) {
+                showToast("Deletion failed.", "error");
+            }
         };
 
         window.showToast = (msg, type = 'info') => {
-            const cont = el('toastContainer'); const t = document.createElement('div');
-            const style = type === 'success' ? 'bg-gray-900 border-gray-700 text-green-400' : type === 'error' ? 'bg-red-900 border-red-700 text-red-200' : 'bg-gray-800 border-gray-600 text-blue-400';
+            const cont = el('toastContainer');
+            const t = document.createElement('div');
+            const style = type === 'success' ? 'bg-gray-900 border-gray-700 text-green-400' 
+                        : type === 'error' ? 'bg-red-900 border-red-700 text-red-200' 
+                        : 'bg-gray-800 border-gray-600 text-blue-400';
             const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+
             t.className = `${style} px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 toast-enter text-sm font-semibold border text-white`;
             t.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> ${msg}`;
             cont.appendChild(t);
+
             requestAnimationFrame(() => { t.classList.remove('toast-enter'); t.classList.add('toast-enter-active'); });
-            setTimeout(() => { t.classList.remove('toast-enter-active'); t.classList.add('toast-exit'); setTimeout(() => t.remove(), 300); }, 3000);
+            setTimeout(() => {
+                t.classList.remove('toast-enter-active'); t.classList.add('toast-exit');
+                setTimeout(() => t.remove(), 300);
+            }, 3000);
         };
 
         window.addEventListener('DOMContentLoaded', initApp);
+
     </script>
 </body>
 </html>
