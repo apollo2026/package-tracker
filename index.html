@@ -1202,11 +1202,16 @@
         window.capturePackageLabel = async () => {
             const video = el('packageScannerVideo');
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
+            canvas.width = video.videoWidth; 
+            canvas.height = video.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            // UPGRADE 1: Apply high-contrast grayscale filter to make barcode text pop for the AI
+            ctx.filter = 'grayscale(100%) contrast(200%)';
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             el('scannerLoading').classList.remove('hidden');
-            const imgData = canvas.toDataURL('image/jpeg', 0.8);
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
             
             try {
                 const worker = await Tesseract.createWorker("eng");
@@ -1224,37 +1229,97 @@
         };
 
         function parseScannedLabel(text) {
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-            let tracking = ""; let name = "";
+            // UPGRADE 2: Strip all spaces and hyphens to catch tracking numbers that the AI misread with gaps
+            const cleanTextForTracking = text.replace(/[\s-]/g, '').toUpperCase();
             
-            const upsMatch = text.match(/\b(1Z[0-9A-Z]{16})\b/i);
-            const numMatch = text.match(/\b(\d{12,22})\b/);
-            const amzMatch = text.match(/\b(TBA\d{12})\b/i);
+            let tracking = ""; 
+            let carrier = "";
+            let name = "";
             
-            if (upsMatch) tracking = upsMatch[1];
-            else if (amzMatch) tracking = amzMatch[1];
-            else if (numMatch) tracking = numMatch[1];
+            // Tracking Number Regex Library based on Carrier Standards
+            const upsRegex = /(1Z[0-9A-Z]{16})/i;
+            const amazonRegex = /(TBA[0-9]{12,15})/i;
+            const fedexRegex = /([0-9]{12}|[0-9]{15}|[0-9]{20})/;
+            const uspsRegex = /(9[0-9]{21}|[A-Z]{2}[0-9]{9}[A-Z]{2})/i;
+            const dhlRegex = /([0-9]{10})/;
             
-            if (tracking) {
-                el('trackingNumber').value = tracking.toUpperCase();
-                if(upsMatch) el('carrier').value = "UPS";
-                else if(amzMatch) el('carrier').value = "Amazon";
-                else if(tracking.length >= 20) el('carrier').value = "USPS";
-                else if(tracking.length === 12 || tracking.length === 15) el('carrier').value = "FedEx";
+            if (upsRegex.test(cleanTextForTracking)) {
+                tracking = cleanTextForTracking.match(upsRegex)[1];
+                carrier = "UPS";
+            } else if (amazonRegex.test(cleanTextForTracking)) {
+                tracking = cleanTextForTracking.match(amazonRegex)[1];
+                carrier = "Amazon";
+            } else if (uspsRegex.test(cleanTextForTracking)) {
+                tracking = cleanTextForTracking.match(uspsRegex)[1];
+                carrier = "USPS";
+            } else if (fedexRegex.test(cleanTextForTracking)) {
+                tracking = cleanTextForTracking.match(fedexRegex)[1];
+                carrier = "FedEx";
+            } else if (dhlRegex.test(cleanTextForTracking)) {
+                tracking = cleanTextForTracking.match(dhlRegex)[1];
+                carrier = "DHL";
             }
             
-            const excludes = ['TRACKING', 'USPS', 'UPS', 'FEDEX', 'AMAZON', 'PRIORITY', 'MAIL', 'GROUND', 'SHIP', 'TO:'];
-            for (let line of lines) {
-                let uLine = line.toUpperCase();
-                let isJunk = excludes.some(w => uLine.includes(w)) || /\d/.test(line); 
-                if (!isJunk && line.split(' ').length >= 2 && line.length < 30) {
-                    name = line; break;
+            // UPGRADE 3: Smart Name Extraction
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+            
+            // Method A: Look specifically for "TO:" or "SHIP TO:" indicators
+            for (let i = 0; i < lines.length; i++) {
+                const upperLine = lines[i].toUpperCase();
+                if (upperLine.includes('SHIP TO') || upperLine.includes('TO:') || upperLine.startsWith('TO ')) {
+                    
+                    // Check if name is on the same line (e.g. "TO: JOHN DOE")
+                    let inlineName = upperLine.replace(/^(SHIP )?TO:?\s*/, '').trim();
+                    if (inlineName.length > 3 && !/\d/.test(inlineName)) {
+                        name = inlineName;
+                        break;
+                    }
+                    
+                    // Otherwise, name is likely on the very next line
+                    if (i + 1 < lines.length) {
+                        let nextLine = lines[i + 1].trim();
+                        // Street addresses have numbers. Names do not.
+                        if (!/\d/.test(nextLine)) { 
+                            name = nextLine;
+                            break;
+                        }
+                    }
                 }
             }
             
-            if (name) el('residentName').value = name;
-            if (tracking || name) showToast("Label scanned and parsed!", "success");
-            else showToast("Couldn't find clear tracking data. Try again.", "error");
+            // Method B: Fallback - look for 2-4 word lines with NO numbers (Address rejection)
+            if (!name) {
+                const excludes = ['TRACKING', 'USPS', 'UPS', 'FEDEX', 'AMAZON', 'PRIORITY', 'MAIL', 'GROUND', 'SHIP', 'LBS', 'WEIGHT', 'PKG', 'BOX'];
+                for (let line of lines) {
+                    let uLine = line.toUpperCase();
+                    let isJunk = excludes.some(w => uLine.includes(w));
+                    let hasNumbers = /\d/.test(line); 
+                    let wordCount = line.split(/\s+/).length;
+                    
+                    if (!isJunk && !hasNumbers && wordCount >= 2 && wordCount <= 4 && line.length < 30) {
+                        name = line; 
+                        break;
+                    }
+                }
+            }
+            
+            // Clean up the extracted data and input it into the form
+            if (name) {
+                // Title Case the name (e.g. "JOHN DOE" -> "John Doe") and strip special characters
+                name = name.toLowerCase().replace(/\b\w/g, s => s.toUpperCase()).replace(/[^a-zA-Z\s-]/g, '').trim();
+                el('residentName').value = name;
+            }
+            
+            if (tracking) {
+                el('trackingNumber').value = tracking.toUpperCase();
+                if(carrier) el('carrier').value = carrier;
+            }
+            
+            if (tracking || name) {
+                showToast("Label scanned! Please verify info for accuracy.", "success");
+            } else {
+                showToast("Couldn't read tracking or name. Please type manually.", "error");
+            }
         }
 
 
