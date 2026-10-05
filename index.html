@@ -732,6 +732,16 @@
         </div>
     </div>
 
+    <!-- Image Lightbox Modal for Enlaging Photos -->
+    <div id="imageLightboxModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4 transition-opacity duration-300" onclick="closeImageModal()">
+        <div class="relative max-w-2xl w-full flex justify-center items-center flex-col" onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()" class="absolute -top-12 right-0 text-gray-400 hover:text-white transition-colors bg-gray-900/50 rounded-full w-10 h-10 flex items-center justify-center border border-gray-700">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+            <img id="lightboxImage" src="" class="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-gray-700">
+        </div>
+    </div>
+
     <div id="toastContainer" class="fixed bottom-4 right-4 z-[200] flex flex-col gap-2"></div>
 
     <script type="module">
@@ -1310,7 +1320,7 @@
                            </span>`;
 
                     let iconHtml = c.photoData 
-                        ? `<img src="${c.photoData}" class="w-8 h-8 rounded-full object-cover border themed-border shadow-sm" />`
+                        ? `<img src="${c.photoData}" onclick="openImageModal('${c.photoData}')" class="w-8 h-8 rounded-full object-cover border themed-border shadow-sm cursor-pointer hover:opacity-75 transition-opacity ring-2 ring-transparent hover:ring-amber-500" title="Click to enlarge photo" />`
                         : `<div class="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center themed-muted shadow-inner border themed-border"><i class="fa-solid fa-user text-xs"></i></div>`;
 
                     let actionsHtml = c.status === 'active'
@@ -1383,6 +1393,17 @@
         };
 
         window.stopCamera = () => { if (videoStream) { videoStream.getTracks().forEach(track => track.stop()); videoStream = null; } };
+
+        // Functions for Image Lightbox
+        window.openImageModal = (src) => {
+            el('lightboxImage').src = src;
+            el('imageLightboxModal').classList.remove('hidden');
+        };
+
+        window.closeImageModal = () => {
+            el('imageLightboxModal').classList.add('hidden');
+            setTimeout(() => { el('lightboxImage').src = ''; }, 300); // Clear image after animation
+        };
 
         window.openContractorModal = () => {
             el('logContractorForm').reset();
